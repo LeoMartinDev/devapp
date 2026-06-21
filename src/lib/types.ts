@@ -1,0 +1,151 @@
+export type ProcessKind = "task" | "service";
+
+export type DependencyCondition = "success" | "ready";
+
+export type ReadyConfig =
+  | HttpReadyConfig
+  | LogReadyConfig
+  | DelayReadyConfig
+  | CommandReadyConfig;
+
+export type HttpReadyConfig = {
+  type: "http";
+  url: string;
+  intervalMs?: number;
+  timeoutMs?: number;
+};
+
+export type LogReadyConfig = {
+  type: "log";
+  pattern: string;
+  regex: boolean;
+  timeoutMs?: number;
+};
+
+export type DelayReadyConfig = {
+  type: "delay";
+  durationMs: number;
+};
+
+export type CommandReadyConfig = {
+  type: "command";
+  cmd: string;
+  intervalMs?: number;
+  timeoutMs?: number;
+};
+
+export type ProcessConfig = {
+  kind: ProcessKind;
+  cmd: string;
+  dependsOn: Record<string, DependencyCondition>;
+  ready?: ReadyConfig;
+};
+
+export type DevappConfig = {
+  version: number;
+  env: Record<string, string>;
+  processes: Record<string, ProcessConfig>;
+};
+
+export type ProcessStatus =
+  | "pending"
+  | "blocked"
+  | "starting"
+  | "running"
+  | "ready"
+  | "succeeded"
+  | "failed"
+  | "stopping"
+  | "stopped";
+
+export type LogStream = "stdout" | "stderr" | "system";
+
+export type ProjectSource = "projectFile" | "appConfigFile";
+
+export type ProjectId = string;
+
+export type RunSessionId = string;
+
+export type ProcessRuntimeId = string;
+
+export type TerminalSessionId = string;
+
+export type ProjectRecord = {
+  id: ProjectId;
+  name: string;
+  baseDir: string;
+  configSource: ProjectSource;
+  configPath: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ProcessSnapshot = {
+  runtimeId: ProcessRuntimeId;
+  name: string;
+  kind: ProcessKind;
+  status: ProcessStatus;
+  startedAt?: string;
+  exitedAt?: string;
+  exitCode?: number;
+};
+
+export type RunSessionSnapshot = {
+  sessionId: RunSessionId;
+  projectId: ProjectId;
+  projectName: string;
+  baseDir: string;
+  startedAt: string;
+  stoppedAt?: string;
+  processes: ProcessSnapshot[];
+};
+
+export type ProcessLogPayload = {
+  sessionId: RunSessionId;
+  runtimeId: ProcessRuntimeId;
+  processName: string;
+  stream: LogStream;
+  line: string;
+  timestamp: string;
+};
+
+export type TerminalSnapshot = {
+  terminalId: TerminalSessionId;
+  title: string;
+  cwd: string;
+  createdAt: string;
+  isOpen: boolean;
+};
+
+export type TerminalOutputPayload = {
+  terminalId: TerminalSessionId;
+  chunk: string;
+  timestamp: string;
+};
+
+export type ProjectConfigDocument = {
+  project: ProjectRecord;
+  yaml: string;
+  config: DevappConfig;
+};
+
+export type SessionStatusEvent = {
+  snapshot: RunSessionSnapshot | null;
+};
+
+export type ProcessLogEvent = {
+  payload: ProcessLogPayload;
+};
+
+export type TerminalEvent = {
+  snapshot: TerminalSnapshot;
+};
+
+export type TerminalOutputEvent = {
+  payload: TerminalOutputPayload;
+};
+
+export type RuntimeErrorEvent = {
+  type: "runtimeError";
+  message: string;
+};
