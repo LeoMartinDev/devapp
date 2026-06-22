@@ -74,6 +74,14 @@ export async function restartProcess(processName: string): Promise<RunSessionSna
   });
 }
 
+export async function startProcess(
+  processName: string,
+): Promise<RunSessionSnapshot | null> {
+  return invoke<RunSessionSnapshot | null>("start_process", {
+    request: { processName },
+  });
+}
+
 export async function stopProcess(processName: string): Promise<RunSessionSnapshot | null> {
   return invoke<RunSessionSnapshot | null>("stop_process", {
     request: { processName },

@@ -5,7 +5,7 @@ use tauri::{AppHandle, Emitter};
 use tokio::{
     io::{AsyncBufReadExt, BufReader},
     process::Child,
-    sync::{broadcast, Mutex},
+    sync::{broadcast, mpsc, Mutex},
 };
 
 use crate::{
@@ -54,6 +54,16 @@ struct ManagedProcess {
     config: ProcessConfig,
     snapshot: ProcessSnapshot,
     child: Option<Arc<Mutex<Child>>>,
+    /// OS process id of the immediate child. Stored so that stop/termination
+    /// can signal the process group without locking the child mutex (which is
+    /// held by the background wait task for the child's whole lifetime).
+    pid: Option<u32>,
+    /// One-shot kill signal consumed by the process's background wait task.
+    /// Routing kills through this channel (rather than locking the child
+    /// mutex to call `Child::kill`) is what lets `stop_process` and
+    /// `finish_session` terminate a running service without deadlocking the
+    /// wait task, which holds that mutex for the child's whole lifetime.
+    kill_tx: Option<mpsc::Sender<()>>,
     log_tx: broadcast::Sender<String>,
     terminating: bool,
 }
@@ -115,6 +125,8 @@ impl ProcessOrchestrator {
                         config: config.clone(),
                         snapshot,
                         child: None,
+                        pid: None,
+                        kill_tx: None,
                         log_tx,
                         terminating: false,
                     },
@@ -158,8 +170,34 @@ impl ProcessOrchestrator {
         window_key: &str,
         process_name: &str,
     ) -> Result<Option<RunSessionSnapshot>, AppError> {
+        {
+            let state = self.inner.lock().await;
+            let active = state
+                .sessions
+                .get(window_key)
+                .ok_or_else(|| AppError::runtime("no session available"))?;
+            let process = active
+                .processes
+                .get(process_name)
+                .ok_or_else(|| AppError::runtime(format!("unknown process `{process_name}`")))?;
+            if matches!(process.config.kind, ProcessKind::Task) {
+                return Err(AppError::runtime("cannot restart a task process"));
+            }
+        }
         self.stop_process(app_handle.clone(), window_key, process_name)
             .await?;
+        self.reset_process(window_key, process_name).await?;
+        self.spawn_runnable_processes(app_handle.clone(), window_key)
+            .await?;
+        self.snapshot(window_key).await
+    }
+
+    pub async fn start_process(
+        &self,
+        app_handle: AppHandle,
+        window_key: &str,
+        process_name: &str,
+    ) -> Result<Option<RunSessionSnapshot>, AppError> {
         self.reset_process(window_key, process_name).await?;
         self.spawn_runnable_processes(app_handle.clone(), window_key)
             .await?;
@@ -172,7 +210,7 @@ impl ProcessOrchestrator {
         window_key: &str,
         process_name: &str,
     ) -> Result<Option<RunSessionSnapshot>, AppError> {
-        let child = {
+        let kill_tx = {
             let mut state = self.inner.lock().await;
             let active = state
                 .sessions
@@ -182,21 +220,19 @@ impl ProcessOrchestrator {
                 .processes
                 .get_mut(process_name)
                 .ok_or_else(|| AppError::runtime(format!("unknown process `{process_name}`")))?;
-            process.terminating = true;
-            if matches!(
-                process.snapshot.status,
-                ProcessStatus::Running | ProcessStatus::Ready | ProcessStatus::Starting
-            ) {
-                process.snapshot.status = ProcessStatus::Stopping;
-                process.child.clone()
-            } else {
-                None
+            if matches!(process.config.kind, ProcessKind::Task) {
+                return Err(AppError::runtime("cannot stop a task process"));
             }
+            let kill_tx = begin_process_termination(process);
+            sync_snapshot_process(&mut active.snapshot, &process.snapshot);
+            kill_tx
         };
 
-        if let Some(child) = child {
-            let mut child = child.lock().await;
-            let _ = child.kill().await;
+        // Signal the background wait task to kill the child. We must NOT lock
+        // the child mutex here: the wait task holds it for the child's whole
+        // lifetime, so contending it would deadlock.
+        if let Some(kill_tx) = kill_tx {
+            let _ = kill_tx.send(()).await;
         }
 
         self.emit_snapshot(&app_handle, window_key).await?;
@@ -221,12 +257,7 @@ impl ProcessOrchestrator {
             .processes
             .get_mut(process_name)
             .ok_or_else(|| AppError::runtime(format!("unknown process `{process_name}`")))?;
-        process.child = None;
-        process.terminating = false;
-        process.snapshot.status = ProcessStatus::Pending;
-        process.snapshot.started_at = None;
-        process.snapshot.exited_at = None;
-        process.snapshot.exit_code = None;
+        reset_managed_process(process);
         sync_snapshot_process(&mut active.snapshot, &process.snapshot);
         Ok(())
     }
@@ -322,7 +353,9 @@ impl ProcessOrchestrator {
         self.emit_snapshot(&app_handle, window_key).await?;
 
         let spawned = spawn_process(&config.cmd, &base_dir, &env)?;
+        let child_pid = spawned.child.id();
         let child = Arc::new(Mutex::new(spawned.child));
+        let (kill_tx, mut kill_rx) = mpsc::channel::<()>(1);
 
         {
             let mut state = self.inner.lock().await;
@@ -335,6 +368,8 @@ impl ProcessOrchestrator {
                 .get_mut(process_name)
                 .ok_or_else(|| AppError::runtime(format!("unknown process `{process_name}`")))?;
             process.child = Some(child.clone());
+            process.pid = child_pid;
+            process.kill_tx = Some(kill_tx);
             process.snapshot.status = ProcessStatus::Running;
             sync_snapshot_process(&mut active.snapshot, &process.snapshot);
         }
@@ -422,9 +457,24 @@ impl ProcessOrchestrator {
         let exit_window_key = window_key.to_string();
         thread::spawn(move || {
             tauri::async_runtime::block_on(async move {
+                // The stop/kill paths signal through `kill_rx` rather than
+                // acquiring the child mutex. `tokio::process::Child::wait`
+                // borrows `&mut Child` for its whole lifetime, so while this
+                // task waits it MUST hold the child lock. If `stop_process`
+                // tried to take that same lock to call `kill()`, the two
+                // would deadlock for any long-running service and the process
+                // would be stuck in `Stopping` forever. Listening for the
+                // kill signal here lets us kill the child from within the
+                // lock we already hold.
                 let exit_status = {
                     let mut child = child.lock().await;
-                    child.wait().await
+                    tokio::select! {
+                        result = child.wait() => result,
+                        _ = kill_rx.recv() => {
+                            let _ = child.kill().await;
+                            child.wait().await
+                        }
+                    }
                 };
                 match exit_status {
                     Ok(status) => {
@@ -597,7 +647,7 @@ impl ProcessOrchestrator {
         exit_code: Option<i32>,
         message: String,
     ) -> Result<(), AppError> {
-        {
+        let terminating = {
             let mut state = self.inner.lock().await;
             let active = state
                 .sessions
@@ -607,14 +657,26 @@ impl ProcessOrchestrator {
                 .processes
                 .get_mut(process_name)
                 .ok_or_else(|| AppError::runtime(format!("unknown process `{process_name}`")))?;
-            process.snapshot.status = ProcessStatus::Failed;
+
+            let terminating = process.terminating || active.stop_requested;
+            if terminating {
+                process.snapshot.status = ProcessStatus::Stopped;
+            } else {
+                process.snapshot.status = ProcessStatus::Failed;
+            }
             process.snapshot.exited_at = Some(Utc::now());
             process.snapshot.exit_code = exit_code;
             process.child = None;
             sync_snapshot_process(&mut active.snapshot, &process.snapshot);
-        }
+            terminating
+        };
 
         self.emit_snapshot(&app_handle, window_key).await?;
+
+        if terminating {
+            return Ok(());
+        }
+
         self.finish_session(app_handle, window_key, Some(message), false)
             .await?;
         Ok(())
@@ -627,7 +689,7 @@ impl ProcessOrchestrator {
         failure_message: Option<String>,
         explicit_stop: bool,
     ) -> Result<Option<RunSessionSnapshot>, AppError> {
-        let children = {
+        let kill_txs = {
             let mut state = self.inner.lock().await;
             let Some(active) = state.sessions.get_mut(window_key) else {
                 return Ok(None);
@@ -635,14 +697,10 @@ impl ProcessOrchestrator {
             active.stop_requested = true;
             let stopped_at = Utc::now();
             active.snapshot.stopped_at = Some(stopped_at);
-            let mut children = Vec::new();
+            let mut kill_txs = Vec::new();
             for process in active.processes.values_mut() {
-                process.terminating = true;
-                if matches!(
-                    process.snapshot.status,
-                    ProcessStatus::Starting | ProcessStatus::Running | ProcessStatus::Ready
-                ) {
-                    process.snapshot.status = ProcessStatus::Stopping;
+                if let Some(kill_tx) = begin_process_termination(process) {
+                    kill_txs.push(kill_tx);
                 } else if explicit_stop
                     && matches!(
                         process.snapshot.status,
@@ -651,19 +709,17 @@ impl ProcessOrchestrator {
                 {
                     process.snapshot.status = ProcessStatus::Stopped;
                 }
-                if let Some(child) = process.child.clone() {
-                    children.push(child);
-                }
                 sync_snapshot_process(&mut active.snapshot, &process.snapshot);
             }
-            children
+            kill_txs
         };
 
         self.emit_snapshot(&app_handle, window_key).await?;
 
-        for child in children {
-            let mut child = child.lock().await;
-            let _ = child.kill().await;
+        // Signal each wait task to kill its own child. Locking the child
+        // mutexes here would deadlock against the wait tasks.
+        for kill_tx in kill_txs {
+            let _ = kill_tx.send(()).await;
         }
 
         if let Some(message) = failure_message {
@@ -731,6 +787,54 @@ fn sync_snapshot_process(
     }
 }
 
+/// Resets a managed process to a clean `Pending` state so it can be re-spawned.
+/// Extracted from `reset_process` to make the state transition unit-testable.
+fn reset_managed_process(process: &mut ManagedProcess) {
+    process.child = None;
+    process.pid = None;
+    process.kill_tx = None;
+    process.terminating = false;
+    process.snapshot.status = ProcessStatus::Pending;
+    process.snapshot.started_at = None;
+    process.snapshot.exited_at = None;
+    process.snapshot.exit_code = None;
+}
+
+/// Marks a managed process for termination and returns its kill signal
+/// sender if the child is still alive. Extracted from `stop_process` /
+/// `finish_session` to make the state transition unit-testable.
+///
+/// The deadlock that prompted this helper: the background wait task holds
+/// the child mutex for the child's whole lifetime (because `Child::wait`
+/// borrows `&mut Child`), so the kill path MUST NOT lock that mutex to call
+/// `Child::kill`. Instead it takes `kill_tx` here and the wait task performs
+/// the kill inside the lock it already holds, signaled via the channel.
+///
+/// On Unix the process group is killed synchronously here (the pid is stored
+/// separately from the child mutex so no deadlock is possible). This ensures
+/// the process exits before `stop_process` returns its snapshot, eliminating
+/// the "stuck at Stopping" race.
+fn begin_process_termination(process: &mut ManagedProcess) -> Option<mpsc::Sender<()>> {
+    process.terminating = true;
+
+    #[cfg(unix)]
+    if let Some(pid) = process.pid {
+        unsafe {
+            libc::kill(-(pid as i32), libc::SIGKILL);
+        }
+    }
+
+    if matches!(
+        process.snapshot.status,
+        ProcessStatus::Starting | ProcessStatus::Running | ProcessStatus::Ready
+    ) {
+        process.snapshot.status = ProcessStatus::Stopping;
+        process.kill_tx.take()
+    } else {
+        None
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use chrono::Utc;
@@ -762,6 +866,8 @@ mod tests {
                 exit_code: None,
             },
             child: None,
+            pid: None,
+            kill_tx: None,
             log_tx,
             terminating: false,
         }
@@ -853,5 +959,86 @@ mod tests {
 
         assert_eq!(session_snapshot.processes.len(), 1);
         assert_eq!(session_snapshot.processes[0], updated);
+    }
+
+    #[test]
+    fn reset_managed_process_restores_pending_state() {
+        let mut process = managed_process("api", ProcessKind::Service, ProcessStatus::Failed);
+        process.terminating = true;
+        process.snapshot.exit_code = Some(1);
+        process.snapshot.exited_at = Some(Utc::now());
+
+        reset_managed_process(&mut process);
+
+        assert_eq!(process.snapshot.status, ProcessStatus::Pending);
+        assert!(!process.terminating);
+        assert!(process.child.is_none());
+        assert_eq!(process.snapshot.exit_code, None);
+        assert_eq!(process.snapshot.exited_at, None);
+        assert_eq!(process.snapshot.started_at, None);
+    }
+
+    fn managed_process_with_kill_tx(
+        name: &str,
+        kind: ProcessKind,
+        status: ProcessStatus,
+    ) -> (ManagedProcess, mpsc::Receiver<()>) {
+        let mut process = managed_process(name, kind.clone(), status);
+        let (kill_tx, kill_rx) = mpsc::channel::<()>(1);
+        process.kill_tx = Some(kill_tx);
+        (process, kill_rx)
+    }
+
+    #[tokio::test]
+    async fn begin_process_termination_transitions_running_to_stopping() {
+        for status in [ProcessStatus::Starting, ProcessStatus::Running, ProcessStatus::Ready] {
+            let (mut process, mut kill_rx) =
+                managed_process_with_kill_tx("api", ProcessKind::Service, status);
+
+            let kill_tx = begin_process_termination(&mut process);
+
+            assert_eq!(process.snapshot.status, ProcessStatus::Stopping);
+            assert!(process.terminating, "terminating flag should be set for {status:?}");
+            let kill_tx = kill_tx.expect("kill signal should be returned for {status:?}");
+            assert!(
+                process.kill_tx.is_none(),
+                "kill_tx must be taken (not cloned) so the channel drains"
+            );
+            // Mirrors `stop_process`: send, then drop. The wait task must
+            // observe the signal.
+            kill_tx.send(()).await.expect("kill signal should send");
+            drop(kill_tx);
+            assert_eq!(kill_rx.recv().await, Some(()));
+        }
+    }
+
+    #[test]
+    fn begin_process_termination_leaves_terminal_states_untouched() {
+        // A process that already exited (Stopped/Failed/Succeeded) must not
+        // produce a kill signal, otherwise stop would hang waiting on a child
+        // that no longer exists.
+        for status in [
+            ProcessStatus::Pending,
+            ProcessStatus::Blocked,
+            ProcessStatus::Stopping,
+            ProcessStatus::Stopped,
+            ProcessStatus::Failed,
+            ProcessStatus::Succeeded,
+        ] {
+            let (mut process, _kill_rx) =
+                managed_process_with_kill_tx("api", ProcessKind::Service, status);
+
+            let kill_tx = begin_process_termination(&mut process);
+
+            assert!(
+                kill_tx.is_none(),
+                "no kill signal expected for terminal/pending state {status:?}"
+            );
+            assert_eq!(
+                process.snapshot.status,
+                status,
+                "status must be unchanged for {status:?}"
+            );
+        }
     }
 }

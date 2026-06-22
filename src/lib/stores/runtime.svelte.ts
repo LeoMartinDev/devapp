@@ -13,6 +13,7 @@ import {
   restartProcess,
   saveProject,
   saveProjectConfig,
+  startProcess,
   startProject,
   stopProcess,
   stopProject,
@@ -36,6 +37,11 @@ import type {
 } from "$lib/types";
 
 export const MAX_LOG_LINES_PER_PROCESS = 10_000;
+
+export type Selection =
+  | { kind: "process"; runtimeId: ProcessRuntimeId }
+  | { kind: "terminal"; terminalId: TerminalSessionId }
+  | null;
 
 class RuntimeStore {
   projects = $state<ProjectRecord[]>([]);
@@ -91,6 +97,16 @@ class RuntimeStore {
 
   get selectedTerminal(): TerminalSnapshot | null {
     return this.terminals.find((terminal) => terminal.terminalId === this.selectedTerminalId) ?? null;
+  }
+
+  get selection(): Selection {
+    if (this.selectedProcessRuntimeId) {
+      return { kind: "process", runtimeId: this.selectedProcessRuntimeId };
+    }
+    if (this.selectedTerminalId) {
+      return { kind: "terminal", terminalId: this.selectedTerminalId };
+    }
+    return null;
   }
 
   logsForSelectedProcess() {
@@ -175,7 +191,7 @@ class RuntimeStore {
   async stopCurrentProject() {
     this.busy = true;
     try {
-      this.session = await stopProject();
+      await stopProject();
       this.syncProcessSelection();
     } catch (error) {
       this.setError(error);
@@ -188,7 +204,20 @@ class RuntimeStore {
   async restartSessionProcess(processName: string) {
     this.busy = true;
     try {
-      this.session = await restartProcess(processName);
+      await restartProcess(processName);
+      this.syncProcessSelection();
+    } catch (error) {
+      this.setError(error);
+      throw error;
+    } finally {
+      this.busy = false;
+    }
+  }
+
+  async startSessionProcess(processName: string) {
+    this.busy = true;
+    try {
+      this.session = await startProcess(processName);
       this.syncProcessSelection();
     } catch (error) {
       this.setError(error);
@@ -201,7 +230,7 @@ class RuntimeStore {
   async stopSessionProcess(processName: string) {
     this.busy = true;
     try {
-      this.session = await stopProcess(processName);
+      await stopProcess(processName);
       this.syncProcessSelection();
     } catch (error) {
       this.setError(error);
@@ -245,15 +274,16 @@ class RuntimeStore {
     }
   }
 
-  async openProjectTerminal(projectId = this.projectId) {
+  async openProjectTerminal(projectId = this.projectId, title?: string) {
     if (!projectId) {
       return null;
     }
     this.busy = true;
     try {
-      const terminal = await openTerminal(projectId);
+      const terminal = await openTerminal(projectId, title);
       this.upsertTerminal(terminal);
       this.selectedTerminalId = terminal.terminalId;
+      this.selectedProcessRuntimeId = null;
       this.terminalOutput[terminal.terminalId] ??= "";
       return terminal;
     } catch (error) {
@@ -262,6 +292,15 @@ class RuntimeStore {
     } finally {
       this.busy = false;
     }
+  }
+
+  async openTitledTerminal(projectId = this.projectId) {
+    if (!projectId) {
+      return null;
+    }
+    const openCount = this.terminals.filter((t) => t.isOpen).length;
+    const title = openCount === 0 ? "bash" : `bash ${openCount + 1}`;
+    return this.openProjectTerminal(projectId, title);
   }
 
   async closeSelectedTerminal() {
@@ -320,10 +359,12 @@ class RuntimeStore {
 
   selectProcess(runtimeId: ProcessRuntimeId) {
     this.selectedProcessRuntimeId = runtimeId;
+    this.selectedTerminalId = null;
   }
 
   selectTerminal(terminalId: TerminalSessionId) {
     this.selectedTerminalId = terminalId;
+    this.selectedProcessRuntimeId = null;
   }
 
   syncProcessSelection() {

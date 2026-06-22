@@ -712,6 +712,7 @@ dependencies = [
  "chrono",
  "directories",
  "indexmap 2.14.0",
+ "libc",
  "portable-pty",
  "regex",
  "reqwest 0.12.28",

@@ -235,6 +235,20 @@ pub async fn restart_process(
 }
 
 #[tauri::command]
+pub async fn start_process(
+    app_handle: AppHandle,
+    window: WebviewWindow,
+    state: State<'_, AppState>,
+    request: ProcessActionRequest,
+) -> Result<Option<RunSessionSnapshot>, String> {
+    state
+        .orchestrator
+        .start_process(app_handle, &window_key(&window), &request.process_name)
+        .await
+        .map_err(String::from)
+}
+
+#[tauri::command]
 pub async fn stop_process(
     app_handle: AppHandle,
     window: WebviewWindow,

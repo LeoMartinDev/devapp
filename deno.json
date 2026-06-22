@@ -4,6 +4,7 @@
     "build": "npm run build",
     "preview": "npm run preview",
     "check": "npm run check",
+    "test": "npm run test",
     "app": "npm run tauri -- dev -- --",
     "tauri": "npm run tauri --"
   }

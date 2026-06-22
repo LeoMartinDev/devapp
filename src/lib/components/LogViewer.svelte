@@ -7,9 +7,13 @@
     processName: string | null;
     truncatedCount: number;
     onClear: () => void;
+    onActions?: (actions: { copy: () => void; clear: () => void }) => void;
   };
 
-  let { logs, processName, truncatedCount, onClear }: Props = $props();
+  let { logs, processName, truncatedCount, onClear, onActions }: Props = $props();
+
+  const ROW_HEIGHT = 22;
+  const OVERSCAN = 10;
 
   let query = $state("");
   let autoScroll = $state(true);
@@ -20,6 +24,8 @@
   let activeProcessName = $state<string | null>(null);
   let copied = $state(false);
   let copyTimer = $state<number | null>(null);
+  let scrollTop = $state(0);
+  let viewportHeight = $state(0);
 
   const visibleLogs = $derived(paused ? (pausedLogs ?? logs) : logs);
   const totalVisibleCount = $derived(visibleLogs.length);
@@ -32,6 +38,16 @@
     ),
   );
 
+  const totalHeight = $derived(filteredLogs.length * ROW_HEIGHT);
+
+  const startIndex = $derived(Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - OVERSCAN));
+  const endIndex = $derived(Math.min(
+    filteredLogs.length,
+    Math.ceil((scrollTop + viewportHeight) / ROW_HEIGHT) + OVERSCAN,
+  ));
+
+  const visibleItems = $derived(filteredLogs.slice(startIndex, endIndex));
+
   function togglePaused() {
     paused = !paused;
     pausedLogs = paused ? [...logs] : null;
@@ -43,6 +59,10 @@
       pausedLogs = [];
     }
   }
+
+  $effect(() => {
+    onActions?.({ copy: copyLogs, clear: clearLogs });
+  });
 
   async function copyLogs() {
     const text = filteredLogs
@@ -74,7 +94,6 @@
       target instanceof HTMLSelectElement ||
       target?.isContentEditable;
 
-    // `/` focuses search (terminal/zed convention); Esc clears + blurs.
     if (!typing && event.key === "/" && searchInput) {
       event.preventDefault();
       searchInput.focus();
@@ -88,6 +107,28 @@
       }
     }
   }
+
+  function handleScroll() {
+    if (!viewport) return;
+    scrollTop = viewport.scrollTop;
+    viewportHeight = viewport.clientHeight;
+    const threshold = 4;
+    const atBottom =
+      scrollTop + viewportHeight >=
+      viewport.scrollHeight - threshold;
+    autoScroll = atBottom;
+  }
+
+  $effect(() => {
+    const el = viewport;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      if (viewport) viewportHeight = viewport.clientHeight;
+    });
+    ro.observe(el);
+    viewportHeight = el.clientHeight;
+    return () => ro.disconnect();
+  });
 
   $effect(() => {
     if (processName === activeProcessName) {
@@ -122,12 +163,54 @@
     stderr: "text-danger",
     system: "text-accent",
   };
+
+  function escapeRegExp(s: string): string {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  type TextSegment = { text: string; match: boolean };
+
+  function highlightLine(text: string, q: string): TextSegment[] {
+    const trimmed = q.trim();
+    if (trimmed.length === 0) return [{ text, match: false }];
+
+    const regex = new RegExp(`(${escapeRegExp(trimmed)})`, "gi");
+    const segments: TextSegment[] = [];
+    let lastIndex = 0;
+    let m: RegExpExecArray | null;
+
+    while ((m = regex.exec(text)) !== null) {
+      if (m.index > lastIndex) {
+        segments.push({ text: text.slice(lastIndex, m.index), match: false });
+      }
+      segments.push({ text: m[0], match: true });
+      lastIndex = regex.lastIndex;
+    }
+
+    if (lastIndex < text.length) {
+      segments.push({ text: text.slice(lastIndex), match: false });
+    }
+
+    return segments;
+  }
+
+  const matchCount = $derived(
+    (() => {
+      const trimmed = query.trim();
+      if (trimmed.length === 0) return null;
+      const regex = new RegExp(escapeRegExp(trimmed), "gi");
+      let count = 0;
+      for (const entry of filteredLogs) {
+        count += (entry.line.match(regex) ?? []).length;
+      }
+      return count;
+    })(),
+  );
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
 
 <section class="flex h-full min-h-0 flex-col bg-canvas">
-  <!-- compact sub-toolbar: search + actions, one row -->
   <div class="flex items-center gap-2 border-b border-border px-3 py-2">
     <div class="relative min-w-0 flex-1">
       <svg
@@ -144,20 +227,16 @@
         type="text"
         placeholder="Search logs"
         spellcheck="false"
-        class="h-8 w-full rounded-md border border-border bg-surface-raised pl-8 pr-12 text-[13px] text-text outline-none transition-colors placeholder:text-text-subtle focus:border-accent"
+        class="h-8 w-full rounded-md border border-border bg-surface-raised pl-8 pr-3 text-[13px] text-text outline-none transition-colors placeholder:text-text-subtle focus:border-accent"
       />
-      <kbd
-        class="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded border border-border bg-surface px-1.5 py-0.5 text-[10px] text-text-subtle sm:inline-block"
-      >
-        /
-      </kbd>
+      {#if matchCount !== null}
+        <span class="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-text-subtle">
+          {matchCount}
+        </span>
+      {/if}
     </div>
 
     <div class="flex shrink-0 items-center gap-0.5">
-      <span class="mr-1.5 hidden whitespace-nowrap text-[11px] text-text-subtle md:inline">
-        {filteredLogs.length}/{totalVisibleCount}
-      </span>
-
       <button
         type="button"
         class={`grid h-8 w-8 place-items-center rounded-md text-text-subtle transition-colors hover:bg-surface-hover hover:text-text ${
@@ -193,45 +272,6 @@
           </svg>
         {/if}
       </button>
-
-      <button
-        type="button"
-        class="grid h-8 w-8 place-items-center rounded-md text-text-subtle transition-colors hover:bg-surface-hover hover:text-text disabled:cursor-not-allowed disabled:opacity-40"
-        onclick={copyLogs}
-        disabled={filteredLogs.length === 0}
-        aria-label="Copy logs to clipboard"
-        title="Copy logs"
-      >
-        {#if copied}
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-success" aria-hidden="true">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-        {:else}
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-          </svg>
-        {/if}
-      </button>
-
-      <button
-        type="button"
-        class="grid h-8 w-8 place-items-center rounded-md text-text-subtle transition-colors hover:bg-danger/10 hover:text-danger disabled:cursor-not-allowed disabled:opacity-40"
-        onclick={clearLogs}
-        disabled={totalVisibleCount === 0}
-        aria-label="Clear logs"
-        title="Clear logs"
-      >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <polyline points="3 6 5 6 21 6" />
-          <path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6" />
-          <path d="M10 11v6M14 11v6" />
-          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-        </svg>
-      </button>
     </div>
   </div>
 
@@ -251,21 +291,32 @@
     </div>
   {/if}
 
-  <div bind:this={viewport} class="min-h-0 flex-1 overflow-auto px-3 py-2 font-mono text-[12px] leading-[1.45]">
+  <div bind:this={viewport} onscroll={handleScroll} class="min-h-0 flex-1 overflow-auto font-mono text-[12px] leading-[1.45]">
     {#if filteredLogs.length === 0}
-      <div class="px-1 py-1 text-text-subtle">{query ? "No matching lines" : "No log line"}</div>
+      <div class="px-3 py-2 text-text-subtle">{query ? "No matching lines" : "No log line"}</div>
     {:else}
-      {#each filteredLogs as entry, index (`${entry.timestamp}-${index}`)}
-        <div class="group flex gap-3 rounded px-1 py-px hover:bg-surface-hover/40">
-          <span class="shrink-0 select-none text-text-subtle">
-            {new Date(entry.timestamp).toLocaleTimeString()}
-          </span>
-          <span class="w-12 shrink-0 select-none uppercase text-text-subtle">{entry.stream}</span>
-          <span class={`whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${toneByStream[entry.stream] ?? "text-text"}`}>
-            {entry.line}
-          </span>
-        </div>
-      {/each}
+      <div style="height: {totalHeight}px; position: relative;">
+        {#each visibleItems as entry, index (`${entry.timestamp}-${startIndex + index}`)}
+          <div
+            style="position: absolute; top: {(startIndex + index) * ROW_HEIGHT}px; left: 0; right: 0; height: {ROW_HEIGHT}px;"
+            class="group flex items-center gap-3 rounded px-3 hover:bg-surface-hover/40"
+          >
+            <span class="shrink-0 select-none text-text-subtle">
+              {new Date(entry.timestamp).toLocaleTimeString()}
+            </span>
+            <span class="w-12 shrink-0 select-none uppercase text-text-subtle">{entry.stream}</span>
+            <span class={`truncate ${toneByStream[entry.stream] ?? "text-text"}`}>
+              {#each highlightLine(entry.line, query) as seg}
+                {#if seg.match}
+                  <mark class="bg-warning/30 text-text rounded-[2px]">{seg.text}</mark>
+                {:else}
+                  {seg.text}
+                {/if}
+              {/each}
+            </span>
+          </div>
+        {/each}
+      </div>
     {/if}
   </div>
 </section>

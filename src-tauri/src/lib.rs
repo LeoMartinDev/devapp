@@ -42,6 +42,7 @@ pub fn run() {
             tauri_api::commands::start_project,
             tauri_api::commands::stop_project,
             tauri_api::commands::restart_process,
+            tauri_api::commands::start_process,
             tauri_api::commands::stop_process,
             tauri_api::commands::get_session_snapshot,
             tauri_api::commands::open_terminal,

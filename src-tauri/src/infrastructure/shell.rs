@@ -14,6 +14,13 @@ pub fn command_for_shell(cmd: &str) -> Command {
     {
         let mut command = Command::new("sh");
         command.arg("-c").arg(cmd);
+
+        #[cfg(unix)]
+        {
+            use std::os::unix::process::CommandExt as _;
+            command.as_std_mut().process_group(0);
+        }
+
         command
     }
 }

@@ -11,7 +11,7 @@ processes:
   api:
     kind: service
     cmd: |
-      deno eval 'console.log("api listening on http://127.0.0.1:3999"); setInterval(() => console.log("api tick", new Date().toISOString()), 1500)'
+      deno eval 'console.log("api listening on http://127.0.0.1:3999"); setInterval(() => console.log("api tick", new Date().toISOString()), 200)'
     dependsOn:
       setup: success
     ready:
