@@ -2,6 +2,7 @@
   import { getCurrentWindow } from "@tauri-apps/api/window";
   import IconButton from "$lib/components/ui/IconButton.svelte";
   import ProjectMenu from "$lib/components/ProjectMenu.svelte";
+  import RunStopButton from "$lib/components/RunStopButton.svelte";
   import WindowControls from "$lib/components/WindowControls.svelte";
   import { runtimeStore } from "$lib/stores/runtime.svelte";
 
@@ -54,21 +55,31 @@
   onmousedown={onDragStart}
 >
   <div class="titlebar-left" data-tauri-no-drag>
-    <div class="min-w-0">
-      <div class="truncate text-sm font-semibold text-text">{project?.name ?? "devapp"}</div>
+    <div class="project-chip">
+      <span class="project-chip-name">{project?.name ?? "devapp"}</span>
+      {#if project?.baseDir}
+        <span class="project-chip-dir">{project.baseDir}</span>
+      {/if}
+      {#if gitInfo?.branch || gitInfo?.worktree}
+        <span class="project-chip-git">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M6 6v12M18 6v12" />
+          </svg>
+          {gitInfo.worktree ?? gitInfo.branch}
+        </span>
+      {/if}
     </div>
-    {#if gitInfo?.branch || gitInfo?.worktree}
-      <span class="git-badge">
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="3" />
-          <path d="M6 6v12M18 6v12" />
-        </svg>
-        {gitInfo.worktree ?? gitInfo.branch}
-      </span>
-    {/if}
   </div>
 
   <div class="titlebar-right" data-tauri-no-drag>
+    <RunStopButton
+      active={sessionActive}
+      busy={runtimeStore.busy}
+      disabled={!runtimeStore.projectId}
+      onRun={() => runtimeStore.startCurrentProject()}
+      onStop={() => runtimeStore.stopCurrentProject()}
+    />
     {#if !runtimeStore.launchLocked}
       <IconButton label="Register project" onclick={openCreateDialog} class="text-lg leading-none">
         +
@@ -112,9 +123,64 @@
 
   .titlebar-left {
     display: flex;
-    align-items: center;
-    gap: 8px;
+    justify-content: center;
     min-width: 0;
+  }
+
+  .project-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+    padding: 2px 10px;
+    border-radius: 6px;
+    background: var(--color-surface-raised, #15171b);
+    border: 1px solid var(--color-border, #ffffff14);
+    min-width: 0;
+  }
+
+  .project-chip-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text, #e7e9ee);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .project-chip-dir {
+    font-size: 11px;
+    color: var(--color-text-subtle, #5d636e);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+    padding-left: 4px;
+    border-left: 1px solid var(--color-border, #ffffff14);
+  }
+
+  .project-chip-git {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: var(--color-surface-hover, #1b1d22);
+    font-size: 11px;
+    color: var(--color-text-muted, #9aa0aa);
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 500px) {
+    .project-chip-dir {
+      display: none;
+    }
+  }
+
+  @media (max-width: 400px) {
+    .project-chip-git {
+      display: none;
+    }
   }
 
   .titlebar-right {
@@ -122,23 +188,5 @@
     align-items: center;
     gap: 2px;
     flex-shrink: 0;
-  }
-
-  .git-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    padding: 1px 6px;
-    border-radius: 4px;
-    background: var(--color-surface-raised, #15171b);
-    font-size: 11px;
-    color: var(--color-text-muted, #9aa0aa);
-    flex-shrink: 0;
-  }
-
-  @media (max-width: 450px) {
-    .git-badge {
-      display: none;
-    }
   }
 </style>
