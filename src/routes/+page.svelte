@@ -6,6 +6,7 @@
   import LogViewer from "$lib/components/LogViewer.svelte";
   import ProcessList from "$lib/components/ProcessList.svelte";
   import RunStopButton from "$lib/components/RunStopButton.svelte";
+  import IconButton from "$lib/components/ui/IconButton.svelte";
   import ProjectSettingsDialog from "$lib/components/ProjectSettingsDialog.svelte";
   import TerminalPane from "$lib/components/TerminalPane.svelte";
   import TitleBar from "$lib/components/TitleBar.svelte";
@@ -167,20 +168,29 @@
 
 {#snippet processList()}
       <section class="flex min-h-0 flex-col">
-        {#if !runtimeStore.launchLocked}
-          <div class="flex gap-2 px-3 pt-4 pb-3">
-            <RunStopButton
-              active={sessionActive}
-              busy={runtimeStore.busy}
-              disabled={!runtimeStore.projectId}
-              onRun={() => runtimeStore.startCurrentProject()}
-              onStop={() => runtimeStore.stopCurrentProject()}
-            />
-          </div>
-          <div class="mx-3 border-t border-border"></div>
-        {/if}
+        <div class="flex gap-2 px-3 pt-4 pb-3">
+          <RunStopButton
+            active={sessionActive}
+            busy={runtimeStore.busy}
+            disabled={!runtimeStore.projectId}
+            onRun={() => runtimeStore.startCurrentProject()}
+            onStop={() => runtimeStore.stopCurrentProject()}
+          />
+          <IconButton
+            label="Open terminal"
+            disabled={!runtimeStore.projectId || runtimeStore.busy}
+            onclick={openTerminal}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="4 17 10 11 4 5" />
+              <line x1="12" y1="19" x2="20" y2="19" />
+            </svg>
+          </IconButton>
+        </div>
+        <div class="mx-3 mb-3 border-t border-border"></div>
 
-        <div class="min-h-0 overflow-y-auto px-3 pb-4 {runtimeStore.launchLocked ? 'pt-4' : 'pt-3'}">
+        <div class="min-h-0 overflow-y-auto px-3 pb-4">
           {#if runtimeStore.uiError}
             <div class="mb-3 rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">
               <div class="break-words">{runtimeStore.uiError}</div>
