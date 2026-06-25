@@ -102,6 +102,13 @@ fn window_key(window: &WebviewWindow) -> String {
     window.label().to_string()
 }
 
+async fn check_launch_locked(state: &AppState) -> Result<(), String> {
+    if state.launch_project_id.lock().await.is_some() {
+        return Err(AppError::LaunchLocked.to_string());
+    }
+    Ok(())
+}
+
 #[tauri::command]
 pub async fn list_projects(state: State<'_, AppState>) -> Result<Vec<ProjectRecord>, String> {
     let store = state.project_store.lock().await;
@@ -124,6 +131,7 @@ pub async fn save_project(
     state: State<'_, AppState>,
     request: SaveProjectRequest,
 ) -> Result<ProjectRecord, String> {
+    check_launch_locked(&state).await?;
     let store = state.project_store.lock().await;
     let record = store
         .prepare_project_record(
@@ -141,6 +149,7 @@ pub async fn remove_project(
     state: State<'_, AppState>,
     project_id: ProjectId,
 ) -> Result<(), String> {
+    check_launch_locked(&state).await?;
     let store = state.project_store.lock().await;
     store.remove(&project_id).map_err(String::from)
 }
@@ -200,6 +209,15 @@ pub async fn start_project(
     state: State<'_, AppState>,
     request: ProjectActionRequest,
 ) -> Result<RunSessionSnapshot, String> {
+    {
+        let locked_id = state.launch_project_id.lock().await;
+        if let Some(locked) = locked_id.as_ref() {
+            if locked != &request.project_id {
+                return Err(AppError::LaunchLocked.to_string());
+            }
+        }
+    }
+
     let project = {
         let store = state.project_store.lock().await;
         store
@@ -363,6 +381,8 @@ pub async fn open_project_window(
     state: State<'_, AppState>,
     request: ProjectActionRequest,
 ) -> Result<(), String> {
+    check_launch_locked(&state).await?;
+
     let project = {
         let store = state.project_store.lock().await;
         store
