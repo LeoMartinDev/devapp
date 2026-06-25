@@ -71,10 +71,19 @@ pub fn detect_git_info(base_dir: &Path) -> GitInfo {
 }
 
 fn home_relative_path(absolute: &Path) -> Option<String> {
-    let home = std::env::var("HOME").ok()?;
-    let home_path = Path::new(&home);
-    let stripped = absolute.strip_prefix(home_path).ok()?;
-    Some(stripped.to_string_lossy().into_owned())
+    if let Ok(home) = std::env::var("HOME") {
+        let home_path = Path::new(&home);
+        if let Ok(stripped) = absolute.strip_prefix(home_path) {
+            return Some(stripped.to_string_lossy().into_owned());
+        }
+    }
+    let mut comps = absolute.components().rev();
+    let name = comps.next()?.as_os_str().to_string_lossy();
+    let parent = comps.next().map(|c| c.as_os_str().to_string_lossy());
+    match parent {
+        Some(parent) => Some(format!("{}/{}", parent, name)),
+        None => Some(name.into_owned()),
+    }
 }
 
 #[cfg(test)]

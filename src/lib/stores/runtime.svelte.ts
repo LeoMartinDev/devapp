@@ -61,6 +61,7 @@ class RuntimeStore {
   busy = $state(false);
   gitInfo = $state<GitInfo | null>(null);
   #gitInfoTimer: ReturnType<typeof setInterval> | null = null;
+  #focusHandler: (() => void) | null = null;
 
   #initialized = false;
   #unlisteners: UnlistenFn[] = [];
@@ -118,14 +119,20 @@ class RuntimeStore {
       this.projectId = this.session.projectId;
     }
     await this.#applyLaunchParams();
-    window.addEventListener("focus", () => {
+    this.#focusHandler = () => {
       void this.#fetchGitInfo();
-    });
+    };
+    window.addEventListener("focus", this.#focusHandler);
     this.syncProcessSelection();
     await this.#attachEventListeners();
   }
 
   async teardown() {
+    this.#stopGitPolling();
+    if (this.#focusHandler !== null) {
+      window.removeEventListener("focus", this.#focusHandler);
+      this.#focusHandler = null;
+    }
     for (const unlisten of this.#unlisteners) {
       await unlisten();
     }

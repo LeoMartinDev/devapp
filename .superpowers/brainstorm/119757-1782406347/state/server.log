@@ -1,0 +1,4 @@
+{"type":"server-started","port":59247,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:59247/?key=72fe250a022372a3b6f4f5a3b12da3ec440c72198962a47580db5b42fa0952f6","screen_dir":"/home/leo/dev/devapp/.superpowers/brainstorm/119757-1782406347/content","state_dir":"/home/leo/dev/devapp/.superpowers/brainstorm/119757-1782406347/state","idle_timeout_ms":14400000}
+{"type":"screen-added","file":"/home/leo/dev/devapp/.superpowers/brainstorm/119757-1782406347/content/titlebar-options.html"}
+{"source":"user-event","type":"click","text":"C\n    \n      Épure\n      Dossiers/chemin puis tiret, branche en texte libre\n      \n        dev/devapp — main — devapp\n        \n          \n            Sidebar\n            Logs / Terminal","choice":"c","id":null,"timestamp":1782406440966}
+{"type":"screen-added","file":"/home/leo/dev/devapp/.superpowers/brainstorm/119757-1782406347/content/waiting.html"}

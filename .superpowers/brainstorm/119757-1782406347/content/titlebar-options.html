@@ -1,0 +1,72 @@
+<h2>Quel style de barre de titre ?</h2>
+<p class="subtitle">La barre de titre native affichera le path + les infos git. Le reste de l'UI (sidebar, contenu) ne change pas.</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Crochets</h3>
+      <p>Branche entre crochets, séparateur tiret cadratin &mdash;</p>
+      <div class="mockup" style="margin-top:8px">
+        <div class="mockup-header" style="font-family:monospace;font-size:13px">dev/devapp [main] &mdash; devapp</div>
+        <div class="mockup-body" style="padding:12px;background:var(--color-surface);min-height:60px">
+          <div style="display:flex;gap:12px">
+            <div class="mock-sidebar" style="width:100px;font-size:11px">Sidebar</div>
+            <div class="mock-content" style="flex:1;font-size:11px">Logs / Terminal</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Parenth&egrave;ses</h3>
+      <p>Branche entre parenth&egrave;ses, plus discret</p>
+      <div class="mockup" style="margin-top:8px">
+        <div class="mockup-header" style="font-family:monospace;font-size:13px">dev/devapp (main) &mdash; devapp</div>
+        <div class="mockup-body" style="padding:12px;background:var(--color-surface);min-height:60px">
+          <div style="display:flex;gap:12px">
+            <div class="mock-sidebar" style="width:100px;font-size:11px">Sidebar</div>
+            <div class="mock-content" style="flex:1;font-size:11px">Logs / Terminal</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>&Eacute;pure</h3>
+      <p>Dossiers/chemin puis tiret, branche en texte libre</p>
+      <div class="mockup" style="margin-top:8px">
+        <div class="mockup-header" style="font-family:monospace;font-size:13px">dev/devapp &mdash; main &mdash; devapp</div>
+        <div class="mockup-body" style="padding:12px;background:var(--color-surface);min-height:60px">
+          <div style="display:flex;gap:12px">
+            <div class="mock-sidebar" style="width:100px;font-size:11px">Sidebar</div>
+            <div class="mock-content" style="flex:1;font-size:11px">Logs / Terminal</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="d" onclick="toggleSelect(this)">
+    <div class="letter">D</div>
+    <div class="content">
+      <h3>S&eacute;parateur pipe</h3>
+      <p>S&eacute;paration nette entre chemin, branche, et app</p>
+      <div class="mockup" style="margin-top:8px">
+        <div class="mockup-header" style="font-family:monospace;font-size:13px">dev/devapp | main | devapp</div>
+        <div class="mockup-body" style="padding:12px;background:var(--color-surface);min-height:60px">
+          <div style="display:flex;gap:12px">
+            <div class="mock-sidebar" style="width:100px;font-size:11px">Sidebar</div>
+            <div class="mock-content" style="flex:1;font-size:11px">Logs / Terminal</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
