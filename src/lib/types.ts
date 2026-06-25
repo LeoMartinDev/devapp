@@ -150,3 +150,11 @@ export type RuntimeErrorEvent = {
   type: "runtimeError";
   message: string;
 };
+
+export interface GitInfo {
+  repoName: string | null;
+  branch: string | null;
+  worktree: string | null;
+  isWorktree: boolean;
+  displayPath: string | null;
+}

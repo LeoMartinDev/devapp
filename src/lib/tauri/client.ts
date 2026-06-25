@@ -1,6 +1,8 @@
 import { invoke } from "$lib/tauri/transport";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 
 import type {
+  GitInfo,
   ProjectConfigDocument,
   ProjectId,
   ProjectRecord,
@@ -121,4 +123,12 @@ export async function closeTerminal(terminalId: string): Promise<TerminalSnapsho
   return invoke<TerminalSnapshot | null>("close_terminal", {
     request: { terminalId },
   });
+}
+
+export async function getGitInfo(baseDir: string): Promise<GitInfo> {
+  return invoke<GitInfo>("get_git_info", { baseDir });
+}
+
+export function setWindowTitle(title: string): Promise<void> {
+  return getCurrentWindow().setTitle(title);
 }
