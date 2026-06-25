@@ -123,7 +123,7 @@
     ></button>
     <div
       bind:this={panel}
-      class={`relative z-10 flex max-h-[calc(100vh-48px)] min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-surface text-text shadow-2xl outline-none ${sizeClass[size]}`}
+      class={`relative z-10 flex max-h-[calc(100vh-44px)] min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-surface text-text shadow-2xl outline-none ${sizeClass[size]}`}
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}

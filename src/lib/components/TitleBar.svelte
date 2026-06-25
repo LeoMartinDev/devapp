@@ -118,13 +118,13 @@
     display: grid;
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    height: 48px;
-    min-height: 48px;
+    height: 44px;
     background: var(--color-canvas, #08090b);
     border-bottom: 1px solid var(--color-border, #ffffff14);
     user-select: none;
     -webkit-user-select: none;
     gap: 8px;
+    overflow: hidden;
   }
 
   .titlebar-left {

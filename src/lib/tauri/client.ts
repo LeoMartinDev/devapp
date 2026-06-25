@@ -27,7 +27,7 @@ export type SaveProjectInput = {
 };
 
 export interface LaunchProjectInfo {
-  project_id: string | null;
+  projectId: string | null;
   locked: boolean;
 }
 

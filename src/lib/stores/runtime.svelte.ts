@@ -116,18 +116,35 @@ class RuntimeStore {
       return;
     }
     this.#initialized = true;
-    await this.refreshProjects();
-    this.session = await getSessionSnapshot();
+    try {
+      await this.refreshProjects();
+    } catch (error) {
+      console.error("[init] refreshProjects failed:", error);
+    }
+    try {
+      this.session = await getSessionSnapshot();
+    } catch (error) {
+      console.error("[init] getSessionSnapshot failed:", error);
+    }
     if (this.session?.projectId) {
       this.projectId = this.session.projectId;
     }
-    await this.#applyLaunchParams();
+    try {
+      await this.#applyLaunchParams();
+    } catch (error) {
+      console.error("[init] applyLaunchParams failed:", error);
+    }
     this.#focusHandler = () => {
       void this.#fetchGitInfo();
     };
     window.addEventListener("focus", this.#focusHandler);
     this.syncProcessSelection();
     await this.#attachEventListeners();
+    try {
+      await setWindowTitle(this.windowTitle);
+    } catch {
+      // window title permission may not be available yet
+    }
   }
 
   async teardown() {
@@ -531,21 +548,24 @@ class RuntimeStore {
 
     if (launchInfo.locked) {
       if (
-        launchInfo.project_id &&
-        this.projects.some((p) => p.id === launchInfo.project_id)
+        launchInfo.projectId &&
+        this.projects.some((p) => p.id === launchInfo.projectId)
       ) {
-        this.projectId = launchInfo.project_id;
+        this.projectId = launchInfo.projectId;
+        if (this.session == null) {
+          await this.startCurrentProject();
+        }
       }
       return;
     }
 
-    const projectId = urlProjectId ?? launchInfo.project_id;
+    const projectId = urlProjectId ?? launchInfo.projectId;
     const autorun = params.get("autorun") === "1";
     if (!projectId || !this.projects.some((project) => project.id === projectId)) {
       return;
     }
     this.projectId = projectId;
-    if ((autorun || launchInfo.project_id === projectId) && !this.session) {
+    if ((autorun || launchInfo.projectId === projectId) && !this.session) {
       await this.startCurrentProject();
     }
   }
