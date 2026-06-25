@@ -21,6 +21,7 @@ import {
   stopProject,
   writeTerminal,
   type SaveProjectInput,
+  type LaunchProjectInfo,
 } from "$lib/tauri/client";
 import type {
   GitInfo,
@@ -51,6 +52,7 @@ class RuntimeStore {
   session = $state<RunSessionSnapshot | null>(null);
   terminals = $state<TerminalSnapshot[]>([]);
   projectId = $state<ProjectId | null>(null);
+  launchLocked = $state<boolean>(false);
   selectedProcessRuntimeId = $state<ProcessRuntimeId | null>(null);
   selectedTerminalId = $state<TerminalSessionId | null>(null);
   processLogs = $state<Record<string, ProcessLogPayload[]>>({});
@@ -181,6 +183,9 @@ class RuntimeStore {
   async refreshProjects() {
     try {
       this.projects = await listProjects();
+      if (this.launchLocked) {
+        return;
+      }
       if (!this.projectId && this.projects.length > 0) {
         this.projectId = this.projects[0].id;
       }
@@ -196,6 +201,10 @@ class RuntimeStore {
   }
 
   async saveProject(input: SaveProjectInput) {
+    if (this.launchLocked) {
+      this.setError("Project is launch-locked and cannot be modified.");
+      return;
+    }
     this.busy = true;
     try {
       const project = await saveProject(input);
@@ -211,6 +220,10 @@ class RuntimeStore {
   }
 
   async removeProject(projectId: ProjectId) {
+    if (this.launchLocked) {
+      this.setError("Project is launch-locked and cannot be modified.");
+      return;
+    }
     this.busy = true;
     try {
       await removeProject(projectId);
@@ -511,14 +524,27 @@ class RuntimeStore {
       return;
     }
     const params = new URLSearchParams(window.location.search);
-    const { project_id: launchProjectId } = await getLaunchProject();
-    const projectId = params.get("projectId") ?? launchProjectId;
+    const urlProjectId = params.get("projectId");
+    const launchInfo = await getLaunchProject();
+    this.launchLocked = launchInfo.locked;
+
+    if (launchInfo.locked) {
+      if (
+        launchInfo.project_id &&
+        this.projects.some((p) => p.id === launchInfo.project_id)
+      ) {
+        this.projectId = launchInfo.project_id;
+      }
+      return;
+    }
+
+    const projectId = urlProjectId ?? launchInfo.project_id;
     const autorun = params.get("autorun") === "1";
     if (!projectId || !this.projects.some((project) => project.id === projectId)) {
       return;
     }
     this.projectId = projectId;
-    if ((autorun || launchProjectId === projectId) && !this.session) {
+    if ((autorun || launchInfo.project_id === projectId) && !this.session) {
       await this.startCurrentProject();
     }
   }
