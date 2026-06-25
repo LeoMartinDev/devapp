@@ -4,6 +4,7 @@ import {
   TAURI_EVENTS,
   closeTerminal,
   getLaunchProject,
+  getGitInfo,
   getSessionSnapshot,
   listProjects,
   loadProjectConfig,
@@ -13,6 +14,7 @@ import {
   restartProcess,
   saveProject,
   saveProjectConfig,
+  setWindowTitle,
   startProcess,
   startProject,
   stopProcess,
@@ -21,6 +23,7 @@ import {
   type SaveProjectInput,
 } from "$lib/tauri/client";
 import type {
+  GitInfo,
   ProcessLogEvent,
   ProcessLogPayload,
   ProcessRuntimeId,
@@ -56,9 +59,53 @@ class RuntimeStore {
   projectConfig = $state<ProjectConfigDocument | null>(null);
   uiError = $state<string | null>(null);
   busy = $state(false);
+  gitInfo = $state<GitInfo | null>(null);
+  #gitInfoTimer: ReturnType<typeof setInterval> | null = null;
 
   #initialized = false;
   #unlisteners: UnlistenFn[] = [];
+
+  async #fetchGitInfo() {
+    const dir = this.project?.baseDir ?? this.session?.baseDir;
+    if (!dir) return;
+    try {
+      this.gitInfo = await getGitInfo(dir);
+    } catch {
+      this.gitInfo = null;
+    }
+  }
+
+  get windowTitle(): string {
+    const proj = this.project;
+    if (!proj) return "devapp";
+
+    const relPath = this.gitInfo?.displayPath ?? proj.name;
+
+    let context = "";
+    if (this.gitInfo?.worktree) {
+      context = ` — ${this.gitInfo.worktree}`;
+    } else if (this.gitInfo?.branch) {
+      context = ` — ${this.gitInfo.branch}`;
+    }
+
+    return `${relPath}${context} — devapp`;
+  }
+
+  #startGitPolling() {
+    this.#stopGitPolling();
+    void this.#fetchGitInfo();
+    this.#gitInfoTimer = setInterval(() => {
+      void this.#fetchGitInfo();
+    }, 60_000);
+  }
+
+  #stopGitPolling() {
+    if (this.#gitInfoTimer !== null) {
+      clearInterval(this.#gitInfoTimer);
+      this.#gitInfoTimer = null;
+    }
+    this.gitInfo = null;
+  }
 
   async init() {
     if (this.#initialized) {
@@ -71,6 +118,9 @@ class RuntimeStore {
       this.projectId = this.session.projectId;
     }
     await this.#applyLaunchParams();
+    window.addEventListener("focus", () => {
+      void this.#fetchGitInfo();
+    });
     this.syncProcessSelection();
     await this.#attachEventListeners();
   }
@@ -180,6 +230,7 @@ class RuntimeStore {
       this.session = await startProject(this.projectId);
       this.projectId = this.session.projectId;
       this.syncProcessSelection();
+      this.#startGitPolling();
     } catch (error) {
       this.setError(error);
       throw error;
@@ -192,6 +243,7 @@ class RuntimeStore {
     this.busy = true;
     try {
       await stopProject();
+      this.#stopGitPolling();
       this.syncProcessSelection();
     } catch (error) {
       this.setError(error);
