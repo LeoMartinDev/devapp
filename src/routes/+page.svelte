@@ -18,8 +18,6 @@
   let configOpen = $state(false);
   let editingProject = $state<ProjectRecord | null>(null);
 
-  let logActions = $state<{ copy: () => void; clear: () => void } | null>(null);
-
   const project = $derived(runtimeStore.project);
   const session = $derived(runtimeStore.session);
   const sessionActive = $derived(!!session && !session.stoppedAt);
@@ -219,7 +217,7 @@
             processName={selectedProcess?.name ?? null}
             truncatedCount={runtimeStore.truncatedLogCountForSelectedProcess()}
             onClear={() => runtimeStore.clearSelectedProcessLogs()}
-            onActions={(actions) => (logActions = actions)}
+            onActions={(actions) => (runtimeStore.logActions = actions)}
           />
         {:else}
           <div class="grid h-full place-items-center px-6 text-center">

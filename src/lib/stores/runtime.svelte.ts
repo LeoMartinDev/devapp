@@ -62,6 +62,7 @@ class RuntimeStore {
   uiError = $state<string | null>(null);
   busy = $state(false);
   gitInfo = $state<GitInfo | null>(null);
+  logActions = $state<{ copy: () => void; clear: () => void } | null>(null);
   #gitInfoTimer: ReturnType<typeof setInterval> | null = null;
   #focusHandler: (() => void) | null = null;
 

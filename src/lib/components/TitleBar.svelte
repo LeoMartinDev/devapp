@@ -16,7 +16,7 @@
   const selectedTerminal = $derived(runtimeStore.selectedTerminal);
   const gitInfo = $derived(runtimeStore.gitInfo);
 
-  let logActions = $state<{ copy: () => void; clear: () => void } | null>(null);
+  const logActions = $derived(runtimeStore.logActions);
 
   function onDragStart(e: MouseEvent) {
     if ((e.target as HTMLElement).closest("[data-tauri-no-drag]")) return;
