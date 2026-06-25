@@ -104,6 +104,7 @@
     height: 36px;
     min-height: 36px;
     background: var(--color-canvas, #08090b);
+    border-bottom: 1px solid var(--color-border, #ffffff14);
     user-select: none;
     -webkit-user-select: none;
     gap: 8px;
