@@ -5,12 +5,10 @@
   import ConfigEditor from "$lib/components/ConfigEditor.svelte";
   import LogViewer from "$lib/components/LogViewer.svelte";
   import ProcessList from "$lib/components/ProcessList.svelte";
-  import ProjectMenu from "$lib/components/ProjectMenu.svelte";
   import ProjectSettingsDialog from "$lib/components/ProjectSettingsDialog.svelte";
-  import RunStopButton from "$lib/components/RunStopButton.svelte";
   import TerminalPane from "$lib/components/TerminalPane.svelte";
+  import TitleBar from "$lib/components/TitleBar.svelte";
   import Button from "$lib/components/ui/Button.svelte";
-  import IconButton from "$lib/components/ui/IconButton.svelte";
   import { runtimeStore } from "$lib/stores/runtime.svelte";
   import { setWindowTitle } from "$lib/tauri/client";
   import { createShortcutRegistry } from "$lib/shortcuts/registry";
@@ -20,7 +18,6 @@
   let configOpen = $state(false);
   let editingProject = $state<ProjectRecord | null>(null);
 
-  // Externally-callable log actions, registered by LogViewer.
   let logActions = $state<{ copy: () => void; clear: () => void } | null>(null);
 
   const project = $derived(runtimeStore.project);
@@ -115,8 +112,23 @@
 
   onMount(() => {
     void runtimeStore.init();
+
+    const onOpenCreate = () => openCreateDialog();
+    const onOpenEdit = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail) openEditDialog(detail);
+    };
+    const onOpenConfig = () => openConfigDialog();
+
+    document.addEventListener("devapp:open-create-dialog", onOpenCreate);
+    document.addEventListener("devapp:open-edit-dialog", onOpenEdit);
+    document.addEventListener("devapp:open-config-dialog", onOpenConfig);
+
     return () => {
       void runtimeStore.teardown();
+      document.removeEventListener("devapp:open-create-dialog", onOpenCreate);
+      document.removeEventListener("devapp:open-edit-dialog", onOpenEdit);
+      document.removeEventListener("devapp:open-config-dialog", onOpenConfig);
     };
   });
 
@@ -152,30 +164,7 @@
 
 <svelte:window onkeydown={shortcutHandler} />
 
-{#snippet sidebarHeader()}
-      <div class="border-b border-border px-4 py-3">
-        <div class="flex items-center justify-between gap-2">
-          <div class="min-w-0">
-            <div class="truncate text-sm font-semibold text-text">{project?.name ?? "devapp"}</div>
-          </div>
-          {#if !runtimeStore.launchLocked}
-            <IconButton label="Register project" onclick={openCreateDialog} class="text-lg leading-none">
-              +
-            </IconButton>
-          {/if}
-        </div>
-
-        <div class="mt-2.5 flex items-center gap-1.5">
-          <RunStopButton
-            active={sessionActive}
-            busy={runtimeStore.busy}
-            disabled={!runtimeStore.projectId}
-            onRun={() => runtimeStore.startCurrentProject()}
-            onStop={() => runtimeStore.stopCurrentProject()}
-          />
-        </div>
-      </div>
-{/snippet}
+<TitleBar />
 
 {#snippet processList()}
       <section class="min-h-0 overflow-y-auto px-3 pb-4 pt-4">
@@ -215,61 +204,7 @@
       </section>
 {/snippet}
 
-{#snippet contentHeader()}
-      <header class="flex h-12 min-w-0 items-center justify-between gap-4 border-b border-border px-4">
-        <div class="min-w-0">
-          {#if selection?.kind === "terminal" && selectedTerminal}
-            <div class="truncate text-sm font-semibold text-text">{selectedTerminal.title}</div>
-            <div class="truncate text-[11px] text-text-subtle">{selectedTerminal.cwd}</div>
-          {:else if selectedProcess}
-            <div class="truncate text-sm font-semibold text-text">{selectedProcess.name}</div>
-            <div class="truncate text-[11px] text-text-subtle">{selectedProcess.status}</div>
-          {:else}
-            <div class="truncate text-sm font-semibold text-text">
-              {project?.name ?? "devapp"}
-            </div>
-            <div class="truncate text-[11px] text-text-subtle">
-              {project?.baseDir ?? "No project registered"}
-            </div>
-          {/if}
-        </div>
-
-        <div class="flex shrink-0 items-center gap-1">
-          <IconButton
-            label="Open terminal"
-            disabled={!runtimeStore.projectId || runtimeStore.busy}
-            onclick={openTerminal}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <polyline points="4 17 10 11 4 5" />
-              <line x1="12" y1="19" x2="20" y2="19" />
-            </svg>
-          </IconButton>
-          <ProjectMenu
-            {project}
-            {selection}
-            {selectedProcess}
-            {selectedTerminal}
-            busy={runtimeStore.busy}
-            {logActions}
-            launchLocked={runtimeStore.launchLocked}
-            onEditProject={openEditDialog}
-            onOpenConfig={openConfigDialog}
-            onRestartProcess={(name) => runtimeStore.restartSessionProcess(name)}
-            onStopProcess={(name) => runtimeStore.stopSessionProcess(name)}
-            onCloseTerminal={() => runtimeStore.closeSelectedTerminal()}
-            onOpenTerminal={openTerminal}
-          />
-        </div>
-      </header>
-{/snippet}
-
-<AppShell
-  {sidebarHeader}
-  {processList}
-  {contentHeader}
->
+<AppShell {processList}>
           {#if selection?.kind === "terminal" && selectedTerminal}
             <TerminalPane
               terminalId={selectedTerminal.terminalId}
