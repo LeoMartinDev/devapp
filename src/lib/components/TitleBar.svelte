@@ -143,7 +143,7 @@
     align-items: center;
     gap: 6px;
     max-width: 100%;
-    padding: 3px 8px;
+    padding: 5px 10px;
     border-radius: 7px;
     background: var(--color-surface, #0e0f12);
     border: 1px solid var(--color-border, #ffffff14);
@@ -209,6 +209,7 @@
   .titlebar-right {
     display: flex;
     align-items: center;
+    justify-self: end;
     gap: 2px;
     flex-shrink: 0;
   }
