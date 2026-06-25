@@ -368,7 +368,7 @@ pub async fn open_project_window(
 
     let url = WebviewUrl::App(format!("?projectId={project_id}&autorun=1").into());
     WebviewWindowBuilder::new(&app_handle, label, url)
-        .title(format!("devapp - {}", project.name))
+        .title(format!("{} — devapp", project.name))
         .build()
         .map_err(|error| error.to_string())?;
 

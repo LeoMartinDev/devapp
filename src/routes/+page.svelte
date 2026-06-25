@@ -12,6 +12,7 @@
   import Button from "$lib/components/ui/Button.svelte";
   import IconButton from "$lib/components/ui/IconButton.svelte";
   import { runtimeStore } from "$lib/stores/runtime.svelte";
+  import { setWindowTitle } from "$lib/tauri/client";
   import { createShortcutRegistry } from "$lib/shortcuts/registry";
   import type { ProjectRecord } from "$lib/types";
 
@@ -26,6 +27,12 @@
   const session = $derived(runtimeStore.session);
   const sessionActive = $derived(!!session && !session.stoppedAt);
   const selection = $derived(runtimeStore.selection);
+
+  $effect(() => {
+    const title = runtimeStore.windowTitle;
+    document.title = title;
+    setWindowTitle(title);
+  });
 
   const selectedProcess = $derived(runtimeStore.selectedProcess);
   const selectedTerminal = $derived(runtimeStore.selectedTerminal);
@@ -138,7 +145,7 @@
 </script>
 
 <svelte:head>
-  <title>devapp</title>
+  <title>{runtimeStore.windowTitle}</title>
 </svelte:head>
 
 <svelte:window onkeydown={shortcutHandler} />
