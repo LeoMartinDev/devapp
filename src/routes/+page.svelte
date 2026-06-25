@@ -27,12 +27,11 @@
   $effect(() => {
     const title = runtimeStore.windowTitle;
     document.title = title;
-    setWindowTitle(title).catch(() => {});
+    setWindowTitle(title);
   });
 
   const selectedProcess = $derived(runtimeStore.selectedProcess);
   const selectedTerminal = $derived(runtimeStore.selectedTerminal);
-
 
   const navigableItems = $derived.by(() => {
     const items: Array<
