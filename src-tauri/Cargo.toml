@@ -26,6 +26,7 @@ serde_yaml = "0.9"
 thiserror = "2"
 tokio = { version = "1", features = ["fs", "io-util", "macros", "net", "process", "rt-multi-thread", "sync", "time"] }
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
+gix = { version = "0.70", default-features = false, features = ["revision"] }
 directories = "6"
 uuid = { version = "1", features = ["serde", "v4"] }
 indexmap = { version = "2", features = ["serde"] }
