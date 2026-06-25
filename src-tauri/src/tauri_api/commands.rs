@@ -11,7 +11,10 @@ use crate::{
         terminal::{TerminalSessionId, TerminalSnapshot},
     },
     error::AppError,
-    infrastructure::config_loader::{load_config, parse_config_document},
+    infrastructure::{
+        config_loader::{load_config, parse_config_document},
+        git_info::{self, GitInfo},
+    },
     tauri_api::state::AppState,
 };
 
@@ -335,6 +338,11 @@ pub async fn close_terminal(
         .terminal_manager
         .close_terminal(app_handle, &request.terminal_id)
         .map_err(String::from)
+}
+
+#[tauri::command]
+pub fn get_git_info(base_dir: String) -> Result<GitInfo, String> {
+    Ok(git_info::detect_git_info(std::path::Path::new(&base_dir)))
 }
 
 #[tauri::command]
