@@ -17,6 +17,20 @@ pub fn run() {
         .manage(app_state)
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
+            #[cfg(target_os = "macos")]
+            if let Some(window) = app.get_webview_window("main") {
+                window
+                    .set_title_bar_style(tauri::TitleBarStyle::Overlay)
+                    .expect("failed to set titlebar overlay style on macOS");
+            }
+
+            #[cfg(not(target_os = "macos"))]
+            if let Some(window) = app.get_webview_window("main") {
+                window
+                    .set_decorations(false)
+                    .expect("failed to disable window decorations");
+            }
+
             let state = app.state::<AppState>().inner().clone();
             tauri::async_runtime::block_on(async move {
                 if let Some(config_path) = launch_config_path() {

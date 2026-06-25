@@ -2,6 +2,8 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager, State, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
+#[cfg(target_os = "macos")]
+use tauri::TitleBarStyle;
 
 use crate::{
     domain::{
@@ -399,10 +401,16 @@ pub async fn open_project_window(
     }
 
     let url = WebviewUrl::App(format!("?projectId={project_id}&autorun=1").into());
-    WebviewWindowBuilder::new(&app_handle, label, url)
-        .title(format!("{} — devapp", project.name))
-        .build()
-        .map_err(|error| error.to_string())?;
+    let win_builder = WebviewWindowBuilder::new(&app_handle, label, url)
+        .title(format!("{} — devapp", project.name));
+
+    #[cfg(target_os = "macos")]
+    let win_builder = win_builder.title_bar_style(TitleBarStyle::Overlay);
+
+    #[cfg(not(target_os = "macos"))]
+    let win_builder = win_builder.decorations(false);
+
+    win_builder.build().map_err(|error| error.to_string())?;
 
     Ok(())
 }
