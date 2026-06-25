@@ -141,13 +141,14 @@
   .project-chip {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     max-width: 100%;
-    padding: 5px 10px;
+    padding: 4px 10px;
     border-radius: 7px;
     background: var(--color-surface, #0e0f12);
     border: 1px solid var(--color-border, #ffffff14);
     min-width: 0;
+    line-height: 1;
   }
 
   .project-chip-name {
@@ -183,8 +184,8 @@
   }
 
   .project-chip-sep {
+    align-self: stretch;
     width: 1px;
-    height: 18px;
     background: var(--color-border, #ffffff14);
     flex-shrink: 0;
   }
