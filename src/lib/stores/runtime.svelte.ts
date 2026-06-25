@@ -511,7 +511,7 @@ class RuntimeStore {
       return;
     }
     const params = new URLSearchParams(window.location.search);
-    const launchProjectId = await getLaunchProject();
+    const { project_id: launchProjectId } = await getLaunchProject();
     const projectId = params.get("projectId") ?? launchProjectId;
     const autorun = params.get("autorun") === "1";
     if (!projectId || !this.projects.some((project) => project.id === projectId)) {

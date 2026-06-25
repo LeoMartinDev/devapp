@@ -26,8 +26,13 @@ export type SaveProjectInput = {
   configSource?: ProjectSource;
 };
 
-export async function getLaunchProject(): Promise<ProjectId | null> {
-  return invoke<ProjectId | null>("get_launch_project");
+export interface LaunchProjectInfo {
+  project_id: string | null;
+  locked: boolean;
+}
+
+export async function getLaunchProject(): Promise<LaunchProjectInfo> {
+  return invoke<LaunchProjectInfo>("get_launch_project");
 }
 
 export async function listProjects(): Promise<ProjectRecord[]> {
