@@ -193,6 +193,8 @@
   .project-chip-action {
     display: flex;
     flex-shrink: 0;
+    width: 20px;
+    justify-content: center;
   }
 
   @media (max-width: 500px) {
