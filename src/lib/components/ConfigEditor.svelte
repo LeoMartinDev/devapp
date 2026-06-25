@@ -103,6 +103,7 @@ import { runtimeStore } from "$lib/stores/runtime.svelte";
     status = null;
     loadError = null;
     validationIssues = [];
+    touchedFields = new Set();
     showPreview = false;
     try {
       const document = await runtimeStore.loadConfig(projectId);
@@ -295,7 +296,7 @@ import { runtimeStore } from "$lib/stores/runtime.svelte";
     void version;
     void globalEnvRows;
     void processes;
-    if (!loadedProjectId) return;
+    if (!open || !loadedProjectId) return;
 
     if (debounceTimer !== null) {
       clearTimeout(debounceTimer);
