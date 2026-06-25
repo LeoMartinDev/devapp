@@ -21,6 +21,7 @@
   import Dialog from "$lib/components/ui/Dialog.svelte";
 import { runtimeStore } from "$lib/stores/runtime.svelte";
   import type { ProjectRecord } from "$lib/types";
+  import { untrack } from "svelte";
 
   type Props = {
     open: boolean;
@@ -270,7 +271,7 @@ import { runtimeStore } from "$lib/stores/runtime.svelte";
     void version;
     void globalEnvRows;
     void processes;
-    if (suppressDirty) return;
+    if (untrack(() => suppressDirty)) return;
     isDirty = true;
   });
 </script>
