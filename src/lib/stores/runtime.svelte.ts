@@ -108,7 +108,20 @@ class RuntimeStore {
       clearInterval(this.#gitInfoTimer);
       this.#gitInfoTimer = null;
     }
-    this.gitInfo = null;
+  }
+
+  #syncGitPolling() {
+    if (this.project?.baseDir) {
+      this.#startGitPolling();
+    } else {
+      this.#stopGitPolling();
+      this.gitInfo = null;
+    }
+  }
+
+  #setProjectId(id: ProjectId | null) {
+    this.projectId = id;
+    this.#syncGitPolling();
   }
 
   async init() {
@@ -127,7 +140,7 @@ class RuntimeStore {
       console.error("[init] getSessionSnapshot failed:", error);
     }
     if (this.session?.projectId) {
-      this.projectId = this.session.projectId;
+      this.#setProjectId(this.session.projectId);
     }
     try {
       await this.#applyLaunchParams();
@@ -139,9 +152,7 @@ class RuntimeStore {
     };
     window.addEventListener("focus", this.#focusHandler);
     this.syncProcessSelection();
-    if (this.session && !this.session.stoppedAt) {
-      this.#startGitPolling();
-    }
+    this.#syncGitPolling();
     await this.#attachEventListeners();
     try {
       await setWindowTitle(this.windowTitle);
@@ -152,6 +163,7 @@ class RuntimeStore {
 
   async teardown() {
     this.#stopGitPolling();
+    this.gitInfo = null;
     if (this.#focusHandler !== null) {
       window.removeEventListener("focus", this.#focusHandler);
       this.#focusHandler = null;
@@ -208,13 +220,13 @@ class RuntimeStore {
         return;
       }
       if (!this.projectId && this.projects.length > 0) {
-        this.projectId = this.projects[0].id;
+        this.#setProjectId(this.projects[0].id);
       }
       if (
         this.projectId &&
         !this.projects.some((project) => project.id === this.projectId)
       ) {
-        this.projectId = this.projects[0]?.id ?? null;
+        this.#setProjectId(this.projects[0]?.id ?? null);
       }
     } catch (error) {
       this.setError(error);
@@ -230,7 +242,7 @@ class RuntimeStore {
     try {
       const project = await saveProject(input);
       await this.refreshProjects();
-      this.projectId = project.id;
+      this.#setProjectId(project.id);
       return project;
     } catch (error) {
       this.setError(error);
@@ -269,9 +281,8 @@ class RuntimeStore {
     this.processLogTruncation = {};
     try {
       this.session = await startProject(this.projectId);
-      this.projectId = this.session.projectId;
+      this.#setProjectId(this.session.projectId);
       this.syncProcessSelection();
-      this.#startGitPolling();
     } catch (error) {
       this.setError(error);
       throw error;
@@ -284,7 +295,6 @@ class RuntimeStore {
     this.busy = true;
     try {
       await stopProject();
-      this.#stopGitPolling();
       this.syncProcessSelection();
     } catch (error) {
       this.setError(error);
@@ -498,15 +508,10 @@ class RuntimeStore {
           return;
         }
         if (snapshot) {
-          this.projectId = snapshot.projectId;
+          this.#setProjectId(snapshot.projectId);
         }
         this.session = event.payload.snapshot;
         this.syncProcessSelection();
-        if (this.session && !this.session.stoppedAt) {
-          this.#startGitPolling();
-        } else {
-          this.#stopGitPolling();
-        }
       }),
     );
     this.#unlisteners.push(
@@ -559,7 +564,7 @@ class RuntimeStore {
         launchInfo.projectId &&
         this.projects.some((p) => p.id === launchInfo.projectId)
       ) {
-        this.projectId = launchInfo.projectId;
+        this.#setProjectId(launchInfo.projectId);
         if (this.session == null) {
           await this.startCurrentProject();
         }
@@ -572,7 +577,7 @@ class RuntimeStore {
     if (!projectId || !this.projects.some((project) => project.id === projectId)) {
       return;
     }
-    this.projectId = projectId;
+    this.#setProjectId(projectId);
     if ((autorun || launchInfo.projectId === projectId) && !this.session) {
       await this.startCurrentProject();
     }
