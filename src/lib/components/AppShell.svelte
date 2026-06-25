@@ -12,7 +12,7 @@
   }: Props = $props();
 </script>
 
-<main class="h-screen min-h-0 overflow-hidden bg-canvas text-text" style="padding-top: 38px">
+<main class="h-screen min-h-0 overflow-hidden bg-canvas text-text" style="padding-top: 36px">
   <div
     class="grid h-full min-h-0 grid-rows-[minmax(260px,42vh)_minmax(0,1fr)] overflow-hidden lg:grid-cols-[260px_minmax(0,1fr)] lg:grid-rows-none"
   >
