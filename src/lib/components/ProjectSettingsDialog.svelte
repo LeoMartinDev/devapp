@@ -14,9 +14,10 @@
     onClose: () => void;
     onSave: (input: SaveProjectInput) => Promise<void>;
     onRemove: (project: ProjectRecord) => Promise<void>;
+    launchLocked: boolean;
   };
 
-  let { open, project, onClose, onSave, onRemove }: Props = $props();
+  let { open, project, onClose, onSave, onRemove, launchLocked }: Props = $props();
 
   let name = $state("");
   let baseDir = $state("");
@@ -131,7 +132,7 @@
   {#snippet footer()}
     <div class="flex items-center justify-between gap-3">
       <div>
-        {#if project}
+        {#if project && !launchLocked}
           <Button variant="danger" onclick={() => (confirmRemoveOpen = true)} disabled={saving || removing}>
             Remove project
           </Button>

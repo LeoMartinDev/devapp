@@ -315,6 +315,7 @@
   onRemove={async (project) => {
     await runtimeStore.removeProject(project.id);
   }}
+  launchLocked={runtimeStore.launchLocked}
 />
 
 <ConfigEditor
