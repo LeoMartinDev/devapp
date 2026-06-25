@@ -215,6 +215,9 @@ import { runtimeStore } from "$lib/stores/runtime.svelte";
       const validation = validateConfigForm(formState);
       validationIssues = validation.issues;
       if (!validation.valid) {
+        for (const issue of validationIssues) {
+          touchedFields.add(issue.key);
+        }
         return;
       }
 
@@ -300,6 +303,12 @@ import { runtimeStore } from "$lib/stores/runtime.svelte";
     debounceTimer = setTimeout(() => {
       validationIssues = validateConfigForm(formState).issues;
     }, 300);
+
+    return () => {
+      if (debounceTimer !== null) {
+        clearTimeout(debounceTimer);
+      }
+    };
   });
 </script>
 
