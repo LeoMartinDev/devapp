@@ -2,7 +2,6 @@
   import { getCurrentWindow } from "@tauri-apps/api/window";
   import IconButton from "$lib/components/ui/IconButton.svelte";
   import ProjectMenu from "$lib/components/ProjectMenu.svelte";
-  import RunStopButton from "$lib/components/RunStopButton.svelte";
   import WindowControls from "$lib/components/WindowControls.svelte";
   import { runtimeStore } from "$lib/stores/runtime.svelte";
 
@@ -50,11 +49,10 @@
 <header
   class="titlebar"
   data-tauri-drag-region
-  style:padding-left={isMac ? "74px" : "12px"}
-  style:padding-right={isMac ? "8px" : "0"}
+  style:padding-left={isMac ? "74px" : "16px"}
+  style:padding-right={isMac ? "8px" : "8px"}
   onmousedown={onDragStart}
 >
-  <!-- Left: Identity + Actions -->
   <div class="titlebar-left" data-tauri-no-drag>
     <div class="min-w-0">
       <div class="truncate text-sm font-semibold text-text">{project?.name ?? "devapp"}</div>
@@ -68,49 +66,14 @@
         {gitInfo.worktree ?? gitInfo.branch}
       </span>
     {/if}
-
-    {#if !runtimeStore.launchLocked}
-      <div class="titlebar-actions">
-        <RunStopButton
-          active={sessionActive}
-          busy={runtimeStore.busy}
-          disabled={!runtimeStore.projectId}
-          onRun={() => runtimeStore.startCurrentProject()}
-          onStop={() => runtimeStore.stopCurrentProject()}
-        />
-        <IconButton label="Register project" onclick={openCreateDialog} class="text-lg leading-none">
-          +
-        </IconButton>
-      </div>
-    {/if}
   </div>
 
-  <!-- Center: Context -->
-  <div class="titlebar-center" data-tauri-no-drag>
-    {#if selection?.kind === "terminal" && selectedTerminal}
-      <div class="truncate text-sm text-text-muted">{selectedTerminal.title}</div>
-      <div class="truncate text-[10px] text-text-subtle">{selectedTerminal.cwd}</div>
-    {:else if selectedProcess}
-      <div class="truncate text-sm text-text-muted">▶ {selectedProcess.name}</div>
-      <div class="truncate text-[10px] text-text-subtle">{selectedProcess.status}</div>
-    {:else if project}
-      <div class="truncate text-[10px] text-text-subtle">{project.baseDir}</div>
-    {/if}
-  </div>
-
-  <!-- Right: Tool actions -->
   <div class="titlebar-right" data-tauri-no-drag>
-    <IconButton
-      label="Open terminal"
-      disabled={!runtimeStore.projectId || runtimeStore.busy}
-      onclick={openTerminal}
-    >
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-        stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <polyline points="4 17 10 11 4 5" />
-        <line x1="12" y1="19" x2="20" y2="19" />
-      </svg>
-    </IconButton>
+    {#if !runtimeStore.launchLocked}
+      <IconButton label="Register project" onclick={openCreateDialog} class="text-lg leading-none">
+        +
+      </IconButton>
+    {/if}
     <ProjectMenu
       {project}
       {selection}
@@ -136,11 +99,11 @@
 <style>
   .titlebar {
     display: grid;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: 1fr auto;
     align-items: center;
-    height: 38px;
-    min-height: 38px;
-    background: var(--color-surface, #0e0f12);
+    height: 36px;
+    min-height: 36px;
+    background: var(--color-canvas, #08090b);
     user-select: none;
     -webkit-user-select: none;
     gap: 8px;
@@ -151,22 +114,6 @@
     align-items: center;
     gap: 8px;
     min-width: 0;
-    flex-shrink: 1;
-  }
-
-  .titlebar-center {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    min-width: 0;
-    overflow: hidden;
-  }
-
-  @media (max-width: 600px) {
-    .titlebar-center {
-      display: none;
-    }
   }
 
   .titlebar-right {
@@ -192,12 +139,5 @@
     .git-badge {
       display: none;
     }
-  }
-
-  .titlebar-actions {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    flex-shrink: 0;
   }
 </style>
