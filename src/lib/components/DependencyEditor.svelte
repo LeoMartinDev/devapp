@@ -9,6 +9,7 @@
     dependencyIssue: (process: ProcessForm, dependencyId: string) => string | null;
     onAdd: (process: ProcessForm) => void;
     onRemove: (process: ProcessForm, dependencyId: string) => void;
+    onFieldBlur?: (key: string) => void;
   };
 
   let {
@@ -17,6 +18,7 @@
     dependencyIssue,
     onAdd,
     onRemove,
+    onFieldBlur,
   }: Props = $props();
 </script>
 
@@ -41,6 +43,7 @@
                 : "border-border bg-surface-raised focus:border-accent"
             }`}
             bind:value={dependency.processName}
+            onblur={() => onFieldBlur?.(`process.${process.id}.dependency.${dependency.id}`)}
           >
             <option value="">Select process</option>
             {#each processes.filter((candidate) => candidate.id !== process.id) as candidate}
@@ -50,6 +53,7 @@
           <select
             class="h-9 rounded-md border border-border bg-surface-raised px-3 text-sm outline-none transition-colors focus:border-accent"
             bind:value={dependency.condition}
+            onblur={() => onFieldBlur?.(`process.${process.id}.dependency.${dependency.id}`)}
           >
             <option value={"ready" satisfies DependencyCondition}>Ready</option>
             <option value={"success" satisfies DependencyCondition}>Success</option>

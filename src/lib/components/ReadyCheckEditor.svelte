@@ -7,9 +7,10 @@
   type Props = {
     process: ProcessForm;
     readyIssue: (process: ProcessForm, field: string) => string | null;
+    onFieldBlur?: (key: string) => void;
   };
 
-  let { process, readyIssue }: Props = $props();
+  let { process, readyIssue, onFieldBlur }: Props = $props();
 </script>
 
 <section class="grid gap-3 rounded-md border border-border bg-surface-raised/40 p-4">
@@ -17,6 +18,7 @@
     label="Enable readiness check"
     class="text-sm text-text-muted"
     bind:checked={process.readyEnabled}
+    onblur={() => onFieldBlur?.(`process.${process.id}.ready.enabled`)}
   />
 
   {#if process.readyEnabled}
@@ -31,6 +33,7 @@
           { value: "command", label: "Command" },
         ]}
         bind:value={process.readyType}
+        onblur={() => onFieldBlur?.(`process.${process.id}.ready.type`)}
       />
 
       {#if process.readyType === "http"}
@@ -39,6 +42,7 @@
           class="h-10"
           error={readyIssue(process, "httpUrl")}
           bind:value={process.httpUrl}
+          onblur={() => onFieldBlur?.(`process.${process.id}.ready.httpUrl`)}
         />
       {:else if process.readyType === "log"}
         <div class="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_120px]">
@@ -47,11 +51,13 @@
             class="h-10"
             error={readyIssue(process, "logPattern")}
             bind:value={process.logPattern}
+            onblur={() => onFieldBlur?.(`process.${process.id}.ready.logPattern`)}
           />
           <CheckboxField
             label="Regex"
             class="mt-7 text-sm text-text-muted"
             bind:checked={process.logRegex}
+            onblur={() => onFieldBlur?.(`process.${process.id}.ready.logRegex`)}
           />
         </div>
       {:else if process.readyType === "delay"}
@@ -62,6 +68,7 @@
           class="h-10"
           error={readyIssue(process, "delayDurationMs")}
           bind:value={process.delayDurationMs}
+          onblur={() => onFieldBlur?.(`process.${process.id}.ready.delayDurationMs`)}
         />
       {:else}
         <TextField
@@ -70,6 +77,7 @@
           monospace
           error={readyIssue(process, "commandCmd")}
           bind:value={process.commandCmd}
+          onblur={() => onFieldBlur?.(`process.${process.id}.ready.commandCmd`)}
         />
       {/if}
     </div>
@@ -84,6 +92,7 @@
             class="h-10"
             error={readyIssue(process, "intervalMs")}
             bind:value={process.intervalMs}
+            onblur={() => onFieldBlur?.(`process.${process.id}.ready.intervalMs`)}
           />
         {/if}
         <TextField
@@ -93,6 +102,7 @@
           class="h-10"
           error={readyIssue(process, "timeoutMs")}
           bind:value={process.timeoutMs}
+          onblur={() => onFieldBlur?.(`process.${process.id}.ready.timeoutMs`)}
         />
       </div>
     {/if}

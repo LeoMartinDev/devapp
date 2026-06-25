@@ -45,6 +45,8 @@ import { runtimeStore } from "$lib/stores/runtime.svelte";
   let showPreview = $state(false);
   let isDirty = $state(false);
   let suppressDirty = $state(false);
+  let touchedFields = $state(new Set<string>());
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
   const selectedProcess = $derived(
     processes.find((process) => process.id === selectedProcessId) ?? processes[0] ?? null,
@@ -230,8 +232,15 @@ import { runtimeStore } from "$lib/stores/runtime.svelte";
     }
   }
 
+  function isTouched(key: string) {
+    return touchedFields.has(key);
+  }
+
   function issueFor(key: string) {
-    return validationIssues.find((issue) => issue.key === key)?.message ?? null;
+    const issue = validationIssues.find((issue) => issue.key === key);
+    if (!issue) return null;
+    if (!isTouched(key)) return null;
+    return issue.message;
   }
 
   function processIssue(process: ProcessFormState, field: string) {
@@ -274,6 +283,24 @@ import { runtimeStore } from "$lib/stores/runtime.svelte";
     if (untrack(() => suppressDirty)) return;
     isDirty = true;
   });
+
+  function markTouched(key: string) {
+    touchedFields.add(key);
+  }
+
+  $effect(() => {
+    void version;
+    void globalEnvRows;
+    void processes;
+    if (!loadedProjectId) return;
+
+    if (debounceTimer !== null) {
+      clearTimeout(debounceTimer);
+    }
+    debounceTimer = setTimeout(() => {
+      validationIssues = validateConfigForm(formState).issues;
+    }, 300);
+  });
 </script>
 
 <Dialog
@@ -314,6 +341,7 @@ import { runtimeStore } from "$lib/stores/runtime.svelte";
               {issueFor}
               onAdd={addGlobalEnvRow}
               onRemove={removeGlobalEnvRow}
+              onFieldBlur={markTouched}
             />
             {#if selectedProcess}
               <section class="grid gap-4">
@@ -322,6 +350,7 @@ import { runtimeStore } from "$lib/stores/runtime.svelte";
                   processCount={processes.length}
                   {processIssue}
                   onRemove={removeProcess}
+                  onFieldBlur={markTouched}
                 />
 
                 <EnvEditor
@@ -330,6 +359,7 @@ import { runtimeStore } from "$lib/stores/runtime.svelte";
                   {issueFor}
                   onAdd={() => addEnvRow(selectedProcess)}
                   onRemove={(id) => removeEnvRow(selectedProcess, id)}
+                  onFieldBlur={markTouched}
                 />
 
                 <div class="grid grid-cols-1 gap-3 lg:grid-cols-[220px_minmax(0,1fr)]">
@@ -340,10 +370,11 @@ import { runtimeStore } from "$lib/stores/runtime.svelte";
                     {dependencyIssue}
                     onAdd={addDependency}
                     onRemove={removeDependency}
+                    onFieldBlur={markTouched}
                   />
                 </div>
 
-                <ReadyCheckEditor process={selectedProcess} {readyIssue} />
+                <ReadyCheckEditor process={selectedProcess} {readyIssue} onFieldBlur={markTouched} />
               </section>
             {/if}
 

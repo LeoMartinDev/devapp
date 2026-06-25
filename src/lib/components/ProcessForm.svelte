@@ -9,9 +9,10 @@
     processCount: number;
     processIssue: (process: ProcessFormState, field: string) => string | null;
     onRemove: (id: string) => void;
+    onFieldBlur?: (key: string) => void;
   };
 
-  let { process, processCount, processIssue, onRemove }: Props = $props();
+  let { process, processCount, processIssue, onRemove, onFieldBlur }: Props = $props();
 </script>
 
 <div class="flex items-center justify-between border-t border-border pt-5">
@@ -32,6 +33,7 @@
     class="h-10"
     error={processIssue(process, "name")}
     bind:value={process.name}
+    onblur={() => onFieldBlur?.(`process.${process.id}.name`)}
   />
   <TextField
     label="Command"
@@ -40,6 +42,7 @@
     monospace
     error={processIssue(process, "cmd")}
     bind:value={process.cmd}
+    onblur={() => onFieldBlur?.(`process.${process.id}.cmd`)}
   />
 </div>
 
@@ -52,5 +55,6 @@
       { value: "task", label: "Task" },
     ]}
     bind:value={process.kind}
+    onblur={() => onFieldBlur?.(`process.${process.id}.kind`)}
   />
 </div>

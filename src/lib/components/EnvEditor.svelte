@@ -8,9 +8,10 @@
     issueFor: (key: string) => string | null;
     onAdd: () => void;
     onRemove: (id: string) => void;
+    onFieldBlur?: (key: string) => void;
   };
 
-  let { rows = $bindable(), processId, issueFor, onAdd, onRemove }: Props = $props();
+  let { rows = $bindable(), processId, issueFor, onAdd, onRemove, onFieldBlur }: Props = $props();
 </script>
 
 <section class="grid gap-3">
@@ -37,6 +38,7 @@
               }`}
               placeholder="KEY"
               bind:value={row.key}
+              onblur={() => onFieldBlur?.(processId ? `process.${processId}.env.${row.id}.key` : `env.${row.id}.key`)}
             />
             {#if keyError}
               <span class="text-xs text-danger">{keyError}</span>
@@ -46,6 +48,7 @@
             class="h-9 rounded-md border border-border bg-surface-raised px-3 text-sm outline-none transition-colors focus:border-accent"
             placeholder="value"
             bind:value={row.value}
+            onblur={() => onFieldBlur?.(processId ? `process.${processId}.env.${row.id}.value` : `env.${row.id}.value`)}
           />
           <Button variant="danger" onclick={() => onRemove(row.id)}>
             Remove
