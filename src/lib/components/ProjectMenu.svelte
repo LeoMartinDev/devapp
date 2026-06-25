@@ -21,6 +21,7 @@
     onOpenConfig: () => void;
     onRestartProcess: (name: string) => void;
     onStopProcess: (name: string) => void;
+    launchLocked: boolean;
     onCloseTerminal: () => void;
     onOpenTerminal: () => void;
   };
@@ -36,6 +37,7 @@
     onOpenConfig,
     onRestartProcess,
     onStopProcess,
+    launchLocked,
     onCloseTerminal,
     onOpenTerminal,
   }: Props = $props();
@@ -48,7 +50,9 @@
     const built: MenuItem[] = [];
 
     if (project) {
-      built.push({ label: "Edit project", onSelect: () => onEditProject(project) });
+      if (!launchLocked) {
+        built.push({ label: "Edit project", onSelect: () => onEditProject(project) });
+      }
       built.push({ label: "Runtime config", onSelect: onOpenConfig, dividerAfter: true });
     }
 

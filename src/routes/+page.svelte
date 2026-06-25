@@ -121,11 +121,13 @@
   });
 
   function openCreateDialog() {
+    if (runtimeStore.launchLocked) return;
     editingProject = null;
     detailsOpen = true;
   }
 
   function openEditDialog(openedProject: ProjectRecord) {
+    if (runtimeStore.launchLocked) return;
     editingProject = openedProject;
     detailsOpen = true;
   }
@@ -156,9 +158,11 @@
           <div class="min-w-0">
             <div class="truncate text-sm font-semibold text-text">{project?.name ?? "devapp"}</div>
           </div>
-          <IconButton label="Register project" onclick={openCreateDialog} class="text-lg leading-none">
-            +
-          </IconButton>
+          {#if !runtimeStore.launchLocked}
+            <IconButton label="Register project" onclick={openCreateDialog} class="text-lg leading-none">
+              +
+            </IconButton>
+          {/if}
         </div>
 
         <div class="mt-2.5 flex items-center gap-1.5">
@@ -249,6 +253,7 @@
             {selectedTerminal}
             busy={runtimeStore.busy}
             {logActions}
+            launchLocked={runtimeStore.launchLocked}
             onEditProject={openEditDialog}
             onOpenConfig={openConfigDialog}
             onRestartProcess={(name) => runtimeStore.restartSessionProcess(name)}
