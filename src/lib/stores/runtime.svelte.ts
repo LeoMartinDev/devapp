@@ -170,7 +170,7 @@ class RuntimeStore {
   }
 
   async startCurrentProject() {
-    if (!this.projectId) {
+    if (!this.projectId || (this.session && !this.session.stoppedAt)) {
       return;
     }
     this.busy = true;

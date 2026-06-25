@@ -235,8 +235,6 @@ mod tests {
         let loaded = parse(
             r#"
 version: 1
-env:
-  PORT: "5173"
 processes:
   setup:
     kind: task
@@ -244,6 +242,8 @@ processes:
   web:
     kind: service
     cmd: deno task dev
+    env:
+      PORT: "5173"
     dependsOn:
       setup: success
     ready:
@@ -257,7 +257,7 @@ processes:
 
         assert_eq!(loaded.base_dir, Path::new("/tmp/devapp-config-loader"));
         assert_eq!(loaded.config.version, 1);
-        assert_eq!(loaded.config.env["PORT"], "5173");
+        assert_eq!(loaded.config.processes["web"].env["PORT"], "5173");
         assert!(loaded.config.processes.contains_key("setup"));
         assert_eq!(
             loaded.config.processes["web"].depends_on["setup"],

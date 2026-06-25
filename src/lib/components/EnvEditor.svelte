@@ -4,17 +4,18 @@
 
   type Props = {
     rows: EnvRow[];
+    processId?: string;
     issueFor: (key: string) => string | null;
     onAdd: () => void;
     onRemove: (id: string) => void;
   };
 
-  let { rows = $bindable(), issueFor, onAdd, onRemove }: Props = $props();
+  let { rows = $bindable(), processId, issueFor, onAdd, onRemove }: Props = $props();
 </script>
 
 <section class="grid gap-3">
   <div class="flex items-center justify-between">
-    <h2 class="text-sm font-semibold text-text">Global environment</h2>
+    <h2 class="text-sm font-semibold text-text">Environment variables</h2>
     <Button size="sm" onclick={onAdd}>Add variable</Button>
   </div>
   <div class="grid gap-2">
@@ -24,7 +25,8 @@
       </div>
     {:else}
       {#each rows as row (row.id)}
-        {@const keyError = issueFor(`env.${row.id}.key`)}
+        {@const envIssueKey = processId ? `process.${processId}.env.${row.id}.key` : `env.${row.id}.key`}
+        {@const keyError = issueFor(envIssueKey)}
         <div class="grid grid-cols-1 gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto]">
           <label class="grid gap-1">
             <input

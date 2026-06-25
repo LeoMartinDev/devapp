@@ -320,13 +320,6 @@ impl ProcessOrchestrator {
                 .ok_or_else(|| AppError::runtime("no session available"))?;
             let session_id = active.snapshot.session_id.clone();
             let project_name = active.project.name.clone();
-            let env = active
-                .loaded_config
-                .config
-                .env
-                .iter()
-                .map(|(key, value)| (key.clone(), value.clone()))
-                .collect::<HashMap<_, _>>();
             let process = active
                 .processes
                 .get_mut(process_name)
@@ -334,6 +327,12 @@ impl ProcessOrchestrator {
             if process.child.is_some() {
                 return Ok(());
             }
+            let env = process
+                .config
+                .env
+                .iter()
+                .map(|(key, value)| (key.clone(), value.clone()))
+                .collect::<HashMap<_, _>>();
             process.snapshot.status = ProcessStatus::Starting;
             process.snapshot.started_at = Some(Utc::now());
             process.snapshot.exited_at = None;
@@ -853,6 +852,7 @@ mod tests {
             config: ProcessConfig {
                 kind: kind.clone(),
                 cmd: format!("run {name}"),
+                env: IndexMap::new(),
                 depends_on: IndexMap::new(),
                 ready: None,
             },
@@ -885,6 +885,7 @@ mod tests {
         let config = ProcessConfig {
             kind: ProcessKind::Service,
             cmd: "deno task dev".to_string(),
+            env: IndexMap::new(),
             depends_on,
             ready: None,
         };
@@ -911,6 +912,7 @@ mod tests {
         let config = ProcessConfig {
             kind: ProcessKind::Service,
             cmd: "deno task dev".to_string(),
+            env: IndexMap::new(),
             depends_on,
             ready: None,
         };

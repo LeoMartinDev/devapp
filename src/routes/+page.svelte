@@ -12,6 +12,7 @@
   import Button from "$lib/components/ui/Button.svelte";
   import IconButton from "$lib/components/ui/IconButton.svelte";
   import { runtimeStore } from "$lib/stores/runtime.svelte";
+  import { createShortcutRegistry } from "$lib/shortcuts/registry";
   import type { ProjectRecord } from "$lib/types";
 
   let detailsOpen = $state(false);
@@ -28,6 +29,82 @@
 
   const selectedProcess = $derived(runtimeStore.selectedProcess);
   const selectedTerminal = $derived(runtimeStore.selectedTerminal);
+
+  const navigableItems = $derived.by(() => {
+    const items: Array<
+      | { kind: "process"; runtimeId: string }
+      | { kind: "terminal"; terminalId: string }
+    > = [];
+    if (session) {
+      for (const p of session.processes) {
+        items.push({ kind: "process", runtimeId: p.runtimeId });
+      }
+    }
+    for (const t of runtimeStore.terminals.filter((t) => t.isOpen)) {
+      items.push({ kind: "terminal", terminalId: t.terminalId });
+    }
+    return items;
+  });
+
+  function navigateList(direction: 1 | -1) {
+    const items = navigableItems;
+    if (items.length === 0) return;
+
+    let currentIndex = -1;
+    if (selection) {
+      currentIndex = items.findIndex((item) => {
+        if (item.kind === "process" && selection.kind === "process") {
+          return item.runtimeId === selection.runtimeId;
+        }
+        if (item.kind === "terminal" && selection.kind === "terminal") {
+          return item.terminalId === selection.terminalId;
+        }
+        return false;
+      });
+    }
+
+    let nextIndex = currentIndex + direction;
+    if (nextIndex < 0) nextIndex = items.length - 1;
+    if (nextIndex >= items.length) nextIndex = 0;
+
+    const item = items[nextIndex];
+    if (item.kind === "process") {
+      runtimeStore.selectProcess(item.runtimeId);
+    } else {
+      runtimeStore.selectTerminal(item.terminalId);
+    }
+  }
+
+  const shortcutHandler = createShortcutRegistry([
+    {
+      key: "Mod+Enter",
+      description: "Start the current project",
+      handler: () => { void runtimeStore.startCurrentProject(); },
+      guard: () => !!runtimeStore.projectId && !sessionActive && !runtimeStore.busy,
+    },
+    {
+      key: "Mod+.",
+      description: "Stop the current project",
+      handler: () => { void runtimeStore.stopCurrentProject(); },
+      guard: () => sessionActive && !runtimeStore.busy,
+    },
+    {
+      key: "Mod+T",
+      description: "Open a new terminal",
+      handler: () => { void openTerminal(); },
+      guard: () => !!runtimeStore.projectId && !runtimeStore.busy,
+    },
+    {
+      key: "Mod+J",
+      description: "Select next sidebar item",
+      handler: () => navigateList(1),
+    },
+    {
+      key: "Mod+K",
+      description: "Select previous sidebar item",
+      handler: () => navigateList(-1),
+    },
+  ]);
 
   onMount(() => {
     void runtimeStore.init();
@@ -63,6 +140,8 @@
 <svelte:head>
   <title>devapp</title>
 </svelte:head>
+
+<svelte:window onkeydown={shortcutHandler} />
 
 {#snippet sidebarHeader()}
       <div class="border-b border-border px-4 py-3">
@@ -145,6 +224,17 @@
         </div>
 
         <div class="flex shrink-0 items-center gap-1">
+          <IconButton
+            label="Open terminal"
+            disabled={!runtimeStore.projectId || runtimeStore.busy}
+            onclick={openTerminal}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="4 17 10 11 4 5" />
+              <line x1="12" y1="19" x2="20" y2="19" />
+            </svg>
+          </IconButton>
           <ProjectMenu
             {project}
             {selection}
@@ -168,13 +258,14 @@
   {processList}
   {contentHeader}
 >
-        {#if selection?.kind === "terminal" && selectedTerminal}
-          <TerminalPane
-            terminalId={selectedTerminal.terminalId}
-            output={runtimeStore.terminalOutput[selectedTerminal.terminalId] ?? ""}
-            onInput={(data) => runtimeStore.writeToTerminal(data)}
-            onResize={(cols, rows) => runtimeStore.resizeSelectedTerminal(cols, rows)}
-          />
+          {#if selection?.kind === "terminal" && selectedTerminal}
+            <TerminalPane
+              terminalId={selectedTerminal.terminalId}
+              output={runtimeStore.terminalOutput[selectedTerminal.terminalId] ?? ""}
+              onInput={(data) => runtimeStore.writeToTerminal(data)}
+              onResize={(cols, rows) => runtimeStore.resizeSelectedTerminal(cols, rows)}
+              onOpenTerminal={openTerminal}
+            />
         {:else if selection?.kind === "process" && session}
           <LogViewer
             logs={runtimeStore.logsForSelectedProcess()}

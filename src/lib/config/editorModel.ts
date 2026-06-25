@@ -24,6 +24,7 @@ export type ProcessForm = {
   name: string;
   kind: ProcessKind;
   cmd: string;
+  envRows: EnvRow[];
   dependencies: DependencyRow[];
   readyEnabled: boolean;
   readyType: ReadyConfig["type"];
@@ -38,7 +39,6 @@ export type ProcessForm = {
 
 export type ConfigFormState = {
   version: number;
-  envRows: EnvRow[];
   processes: ProcessForm[];
 };
 
@@ -54,6 +54,7 @@ export function createProcess(name = "api", nextId: IdFactory = defaultNextId): 
     name,
     kind: "service",
     cmd: "",
+    envRows: [],
     dependencies: [],
     readyEnabled: false,
     readyType: "http",
@@ -78,6 +79,11 @@ export function toProcessForm(
     name,
     kind: config.kind,
     cmd: config.cmd,
+    envRows: Object.entries(config.env ?? {}).map(([key, value]) => ({
+      id: nextId("env"),
+      key,
+      value,
+    })),
     dependencies: Object.entries(config.dependsOn ?? {}).map(([processName, condition]) => ({
       id: nextId("dependency"),
       processName,
@@ -100,25 +106,25 @@ export function toProcessForm(
 }
 
 export function buildConfig(form: ConfigFormState): DevappConfig {
-  const env = Object.fromEntries(
-    form.envRows
-      .map((row) => [row.key.trim(), row.value] as const)
-      .filter(([key]) => key.length > 0),
-  );
   const processEntries = form.processes
     .map((process) => [process.name.trim(), buildProcessConfig(process)] as const)
     .filter(([name]) => name.length > 0);
   return {
     version: form.version,
-    env,
     processes: Object.fromEntries(processEntries),
   };
 }
 
 export function buildProcessConfig(process: ProcessForm): ProcessConfig {
+  const env = Object.fromEntries(
+    process.envRows
+      .map((row) => [row.key.trim(), row.value] as const)
+      .filter(([key]) => key.length > 0),
+  );
   return {
     kind: process.kind,
     cmd: process.cmd,
+    env,
     dependsOn: Object.fromEntries(
       process.dependencies
         .map((dependency) => [dependency.processName.trim(), dependency.condition] as const)
@@ -192,20 +198,20 @@ function optionalPollFields<T extends Extract<ReadyConfig, { intervalMs?: number
 
 export function serializeConfig(config: DevappConfig) {
   const lines: string[] = [`version: ${config.version}`];
-  lines.push("env:");
-  const envEntries = Object.entries(config.env);
-  if (envEntries.length === 0) {
-    lines.push("  {}");
-  } else {
-    for (const [key, value] of envEntries) {
-      lines.push(`  ${yamlKey(key)}: ${yamlScalar(value)}`);
-    }
-  }
   lines.push("processes:");
   for (const [name, process] of Object.entries(config.processes)) {
     lines.push(`  ${yamlKey(name)}:`);
     lines.push(`    kind: ${process.kind}`);
     lines.push(`    cmd: ${yamlScalar(process.cmd)}`);
+    lines.push("    env:");
+    const envEntries = Object.entries(process.env);
+    if (envEntries.length === 0) {
+      lines.push("      {}");
+    } else {
+      for (const [key, value] of envEntries) {
+        lines.push(`      ${yamlKey(key)}: ${yamlScalar(value)}`);
+      }
+    }
     lines.push("    dependsOn:");
     const dependencies = Object.entries(process.dependsOn);
     if (dependencies.length === 0) {

@@ -1,4 +1,4 @@
-import type { ConfigFormState, ProcessForm } from "$lib/config/editorModel";
+import type { ConfigFormState, EnvRow, ProcessForm } from "$lib/config/editorModel";
 import type { ProjectSource } from "$lib/types";
 
 export type ValidationIssue = {
@@ -39,17 +39,16 @@ export function validateProjectDetails(input: ProjectDetailsInput): ValidationRe
 
 export function validateConfigForm(formState: ConfigFormState): ValidationResult {
   const issues: ValidationIssue[] = [];
-  validateEnvRows(formState, issues);
   validateProcesses(formState.processes, issues);
   return toResult(issues);
 }
 
-function validateEnvRows(formState: ConfigFormState, issues: ValidationIssue[]) {
+function validateProcessEnvRows(processId: string, rows: EnvRow[], issues: ValidationIssue[]) {
   const seen = new Map<string, string>();
-  for (const row of formState.envRows) {
+  for (const row of rows) {
     const key = row.key.trim();
     if (key.length === 0 && row.value.trim().length > 0) {
-      issues.push({ key: `env.${row.id}.key`, message: "Environment key is required." });
+      issues.push({ key: `process.${processId}.env.${row.id}.key`, message: "Environment key is required." });
       continue;
     }
     if (key.length === 0) {
@@ -57,8 +56,8 @@ function validateEnvRows(formState: ConfigFormState, issues: ValidationIssue[]) 
     }
     const firstRowId = seen.get(key);
     if (firstRowId) {
-      issues.push({ key: `env.${row.id}.key`, message: "Environment keys must be unique." });
-      issues.push({ key: `env.${firstRowId}.key`, message: "Environment keys must be unique." });
+      issues.push({ key: `process.${processId}.env.${row.id}.key`, message: "Environment keys must be unique." });
+      issues.push({ key: `process.${processId}.env.${firstRowId}.key`, message: "Environment keys must be unique." });
     } else {
       seen.set(key, row.id);
     }
@@ -88,6 +87,7 @@ function validateProcesses(processes: ProcessForm[], issues: ValidationIssue[]) 
       issues.push({ key: `process.${process.id}.cmd`, message: "Command is required." });
     }
 
+    validateProcessEnvRows(process.id, process.envRows, issues);
     validateDependencies(process, names, processes, issues);
     validateReadyConfig(process, issues);
   }

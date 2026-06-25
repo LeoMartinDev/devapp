@@ -50,12 +50,12 @@ function projectRecord(
 // ---------------------------------------------------------------------------
 
 const denoRunnerYaml = `version: 1
-env:
-  EXAMPLE_ENV: "hello-from-devapp"
 
 processes:
   setup:
     kind: task
+    env:
+      EXAMPLE_ENV: "hello-from-devapp"
     cmd: |
       deno eval 'console.log("setup complete:", Deno.env.get("EXAMPLE_ENV"))'
 
@@ -84,22 +84,24 @@ processes:
 
 const denoRunnerConfig: DevappConfig = {
   version: 1,
-  env: { EXAMPLE_ENV: "hello-from-devapp" },
   processes: {
     setup: {
       kind: "task",
       cmd: 'deno eval \'console.log("setup complete:", Deno.env.get("EXAMPLE_ENV"))\'',
+      env: { EXAMPLE_ENV: "hello-from-devapp" },
       dependsOn: {},
     },
     api: {
       kind: "service",
       cmd: 'deno eval \'console.log("api listening on http://127.0.0.1:3999"); setInterval(() => console.log("api tick", new Date().toISOString()), 1500)\'',
+      env: {},
       dependsOn: { setup: "success" },
       ready: { type: "log", pattern: "api listening", regex: false, timeoutMs: 10000 },
     },
     worker: {
       kind: "service",
       cmd: 'deno eval \'console.log("worker ready"); setInterval(() => console.log("worker tick", new Date().toISOString()), 2000)\'',
+      env: {},
       dependsOn: { api: "ready" },
       ready: { type: "delay", durationMs: 500 },
     },

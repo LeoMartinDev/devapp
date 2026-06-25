@@ -1,10 +1,22 @@
 <script lang="ts">
-  import StatusDot from "$lib/components/ui/StatusDot.svelte";
   import type {
     ProcessRuntimeId,
     ProcessSnapshot,
+    ProcessStatus,
     TerminalSnapshot,
   } from "$lib/types";
+
+  const statusColor: Record<ProcessStatus, string> = {
+    pending: "text-text-subtle",
+    blocked: "text-warning",
+    starting: "text-accent",
+    running: "text-accent",
+    ready: "text-success",
+    succeeded: "text-success",
+    failed: "text-danger",
+    stopping: "text-warning",
+    stopped: "text-text-subtle",
+  };
 
   type Props = {
     processes: ProcessSnapshot[];
@@ -34,10 +46,6 @@
     onCloseTerminal,
   }: Props = $props();
 
-  // A process row exposes a single contextual action that depends on its state:
-  //   running/ready/starting -> Stop
-  //   stopped/failed/succeeded -> Start
-  //   pending/blocked/stopping -> none (button disabled)
   type RowAction = "stop" | "start" | null;
 
   function rowAction(process: ProcessSnapshot): RowAction {
@@ -58,12 +66,6 @@
 
   function actionEnabled(process: ProcessSnapshot) {
     return !busy && rowAction(process) !== null;
-  }
-
-  function statusLabel(process: ProcessSnapshot) {
-    return process.exitCode !== undefined && process.exitCode !== null
-      ? `${process.status} · exit ${process.exitCode}`
-      : process.status;
   }
 </script>
 
@@ -91,17 +93,17 @@
           onclick={() => onSelectProcess(process.runtimeId)}
         >
           {#if process.kind === "task"}
-            <svg class="h-3.5 w-3.5 shrink-0 text-text-subtle" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <svg class="h-3.5 w-3.5 shrink-0 {statusColor[process.status]}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M13 2L3 14h8l-2 8 10-12h-8l2-8z" />
             </svg>
           {:else}
-            <StatusDot status={process.status} />
+            <svg class="h-3.5 w-3.5 shrink-0 {statusColor[process.status]}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+            </svg>
           {/if}
           <span class="min-w-0">
             <span class="block truncate text-[13px] font-medium text-text">{process.name}</span>
-            <span class="block truncate text-[11px] text-text-subtle">
-              {statusLabel(process)}
-            </span>
+            <span class="block truncate text-[11px] text-text-subtle">{process.status}</span>
           </span>
         </button>
 
@@ -154,7 +156,7 @@
                 <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
               </svg>
             </button>
-          {:else}
+          {:else if process.kind !== "task"}
             <button
               type="button"
               class="grid h-6 w-6 place-items-center rounded text-text-subtle transition-colors hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-40"

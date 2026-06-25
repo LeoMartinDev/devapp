@@ -9,9 +9,10 @@
     output: string;
     onInput: (data: string) => void;
     onResize: (cols: number, rows: number) => void;
+    onOpenTerminal: () => void;
   };
 
-  let { terminalId, output, onInput, onResize }: Props = $props();
+  let { terminalId, output, onInput, onResize, onOpenTerminal }: Props = $props();
 
   let host = $state<HTMLDivElement | null>(null);
   let xterm = $state<Terminal | null>(null);
@@ -119,13 +120,20 @@
     class={`min-h-0 flex-1 overflow-hidden px-2 py-2 ${terminalId ? "" : "hidden"}`}
   ></div>
   {#if !terminalId}
-    <div class="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 px-4 text-center">
+    <div class="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 px-4 text-center">
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
         stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-text-subtle" aria-hidden="true">
         <polyline points="4 17 10 11 4 5" />
         <line x1="12" y1="19" x2="20" y2="19" />
       </svg>
-      <div class="text-sm text-text-subtle">Open a terminal from the project menu.</div>
+      <div class="text-sm text-text-subtle">Open a terminal from the project menu</div>
+      <button
+        type="button"
+        class="rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-text transition-colors hover:bg-surface-hover hover:border-text-muted"
+        onclick={onOpenTerminal}
+      >
+        Open terminal
+      </button>
     </div>
   {/if}
 </section>

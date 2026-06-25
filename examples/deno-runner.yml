@@ -1,10 +1,10 @@
 version: 1
-env:
-  EXAMPLE_ENV: "hello-from-devapp"
 
 processes:
   setup:
     kind: task
+    env:
+      EXAMPLE_ENV: "hello-from-devapp"
     cmd: |
       deno eval 'console.log("setup complete:", Deno.env.get("EXAMPLE_ENV"))'
 

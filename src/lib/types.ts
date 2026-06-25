@@ -37,13 +37,13 @@ export type CommandReadyConfig = {
 export type ProcessConfig = {
   kind: ProcessKind;
   cmd: string;
+  env: Record<string, string>;
   dependsOn: Record<string, DependencyCondition>;
   ready?: ReadyConfig;
 };
 
 export type DevappConfig = {
   version: number;
-  env: Record<string, string>;
   processes: Record<string, ProcessConfig>;
 };
 

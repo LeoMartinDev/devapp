@@ -32,7 +32,6 @@
   let { open, project, onClose }: Props = $props();
 
   let version = $state(1);
-  let envRows = $state<EnvRow[]>([]);
   let processes = $state<ProcessFormState[]>([]);
   let selectedProcessId = $state<string | null>(null);
   let loadedProjectId = $state<string | null>(null);
@@ -57,7 +56,6 @@
 
   const formState = $derived<ConfigFormState>({
     version,
-    envRows,
     processes,
   });
 
@@ -79,15 +77,13 @@
 
   function resetEmpty() {
     version = 1;
-    envRows = [];
     processes = [newProcess("api")];
     selectedProcessId = processes[0].id;
-    rawYaml = serializeConfig(buildConfigFromForm({ version, envRows, processes }));
+    rawYaml = serializeConfig(buildConfigFromForm({ version, processes }));
   }
 
   function resetUnloaded() {
     version = 1;
-    envRows = [];
     processes = [];
     selectedProcessId = null;
     rawYaml = "";
@@ -119,11 +115,6 @@
         return;
       }
       version = config.version;
-      envRows = Object.entries(config.env ?? {}).map(([key, value]) => ({
-        id: nextId("env"),
-        key,
-        value,
-      }));
       processes = Object.entries(config.processes ?? {}).map(([name, process]) =>
         toProcessForm(name, process, nextId),
       );
@@ -142,12 +133,12 @@
     }
   }
 
-  function addEnvRow() {
-    envRows = [...envRows, { id: nextId("env"), key: "", value: "" }];
+  function addEnvRow(process: ProcessFormState) {
+    process.envRows = [...process.envRows, { id: nextId("env"), key: "", value: "" }];
   }
 
-  function removeEnvRow(id: string) {
-    envRows = envRows.filter((row) => row.id !== id);
+  function removeEnvRow(process: ProcessFormState, rowId: string) {
+    process.envRows = process.envRows.filter((row) => row.id !== rowId);
   }
 
   function addProcess() {
@@ -251,6 +242,10 @@
     return issueFor(`process.${process.id}.dependency.${dependencyId}`);
   }
 
+  function envRowIssue(process: ProcessFormState, rowId: string) {
+    return issueFor(`process.${process.id}.env.${rowId}.key`);
+  }
+
   function rawInputClass(error: string | null, extra = "") {
     const border = error ? "border-danger focus:border-danger" : "border-border focus:border-accent";
     return `rounded-md border ${border} bg-surface-raised px-3 outline-none transition-colors ${extra}`;
@@ -337,13 +332,6 @@
             <div class="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-warning/90">
               Saving rewrites the generated YAML and may remove comments or unsupported fields.
             </div>
-            <EnvEditor
-              bind:rows={envRows}
-              {issueFor}
-              onAdd={addEnvRow}
-              onRemove={removeEnvRow}
-            />
-
             {#if selectedProcess}
               <section class="grid gap-4">
                 <ProcessForm
@@ -351,6 +339,14 @@
                   processCount={processes.length}
                   {processIssue}
                   onRemove={removeProcess}
+                />
+
+                <EnvEditor
+                  bind:rows={selectedProcess.envRows}
+                  processId={selectedProcess.id}
+                  {issueFor}
+                  onAdd={() => addEnvRow(selectedProcess)}
+                  onRemove={(id) => removeEnvRow(selectedProcess, id)}
                 />
 
                 <div class="grid grid-cols-1 gap-3 lg:grid-cols-[220px_minmax(0,1fr)]">
