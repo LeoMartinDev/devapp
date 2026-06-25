@@ -118,8 +118,8 @@
     display: grid;
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    height: 40px;
-    min-height: 40px;
+    height: 44px;
+    min-height: 44px;
     background: var(--color-canvas, #08090b);
     border-bottom: 1px solid var(--color-border, #ffffff14);
     user-select: none;
@@ -143,7 +143,7 @@
     align-items: center;
     gap: 6px;
     max-width: 100%;
-    padding: 5px 10px;
+    padding: 6px 10px;
     border-radius: 7px;
     background: var(--color-surface, #0e0f12);
     border: 1px solid var(--color-border, #ffffff14);
