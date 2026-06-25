@@ -139,6 +139,9 @@ class RuntimeStore {
     };
     window.addEventListener("focus", this.#focusHandler);
     this.syncProcessSelection();
+    if (this.session && !this.session.stoppedAt) {
+      this.#startGitPolling();
+    }
     await this.#attachEventListeners();
     try {
       await setWindowTitle(this.windowTitle);
@@ -499,6 +502,11 @@ class RuntimeStore {
         }
         this.session = event.payload.snapshot;
         this.syncProcessSelection();
+        if (this.session && !this.session.stoppedAt) {
+          this.#startGitPolling();
+        } else {
+          this.#stopGitPolling();
+        }
       }),
     );
     this.#unlisteners.push(
