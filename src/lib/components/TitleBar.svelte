@@ -54,7 +54,9 @@
   style:padding-right={isMac ? "8px" : "8px"}
   onmousedown={onDragStart}
 >
-  <div class="titlebar-left" data-tauri-no-drag>
+  <div class="titlebar-left" data-tauri-no-drag></div>
+
+  <div class="titlebar-center" data-tauri-no-drag>
     <div class="project-chip">
       <span class="project-chip-name">{project?.name ?? "devapp"}</span>
       {#if project?.baseDir}
@@ -69,17 +71,21 @@
           {gitInfo.worktree ?? gitInfo.branch}
         </span>
       {/if}
+      <span class="project-chip-sep"></span>
+      <span class="project-chip-action">
+        <RunStopButton
+          active={sessionActive}
+          busy={runtimeStore.busy}
+          disabled={!runtimeStore.projectId}
+          compact
+          onRun={() => runtimeStore.startCurrentProject()}
+          onStop={() => runtimeStore.stopCurrentProject()}
+        />
+      </span>
     </div>
   </div>
 
   <div class="titlebar-right" data-tauri-no-drag>
-    <RunStopButton
-      active={sessionActive}
-      busy={runtimeStore.busy}
-      disabled={!runtimeStore.projectId}
-      onRun={() => runtimeStore.startCurrentProject()}
-      onStop={() => runtimeStore.stopCurrentProject()}
-    />
     {#if !runtimeStore.launchLocked}
       <IconButton label="Register project" onclick={openCreateDialog} class="text-lg leading-none">
         +
@@ -110,10 +116,10 @@
 <style>
   .titlebar {
     display: grid;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    height: 36px;
-    min-height: 36px;
+    height: 40px;
+    min-height: 40px;
     background: var(--color-canvas, #08090b);
     border-bottom: 1px solid var(--color-border, #ffffff14);
     user-select: none;
@@ -122,9 +128,14 @@
   }
 
   .titlebar-left {
+    min-width: 0;
+  }
+
+  .titlebar-center {
     display: flex;
     justify-content: center;
     min-width: 0;
+    overflow: hidden;
   }
 
   .project-chip {
@@ -132,9 +143,9 @@
     align-items: center;
     gap: 6px;
     max-width: 100%;
-    padding: 2px 10px;
-    border-radius: 6px;
-    background: var(--color-surface-raised, #15171b);
+    padding: 3px 8px;
+    border-radius: 7px;
+    background: var(--color-surface, #0e0f12);
     border: 1px solid var(--color-border, #ffffff14);
     min-width: 0;
   }
@@ -146,6 +157,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    flex-shrink: 1;
   }
 
   .project-chip-dir {
@@ -155,8 +167,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 180px;
-    padding-left: 4px;
-    border-left: 1px solid var(--color-border, #ffffff14);
+    flex-shrink: 1;
   }
 
   .project-chip-git {
@@ -168,6 +179,18 @@
     background: var(--color-surface-hover, #1b1d22);
     font-size: 11px;
     color: var(--color-text-muted, #9aa0aa);
+    flex-shrink: 0;
+  }
+
+  .project-chip-sep {
+    width: 1px;
+    height: 18px;
+    background: var(--color-border, #ffffff14);
+    flex-shrink: 0;
+  }
+
+  .project-chip-action {
+    display: flex;
     flex-shrink: 0;
   }
 
