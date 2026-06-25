@@ -49,6 +49,13 @@ pub struct SaveProjectConfigRequest {
     pub yaml: String,
 }
 
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LaunchProjectInfo {
+    pub project_id: Option<ProjectId>,
+    pub locked: bool,
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProjectActionRequest {
@@ -102,9 +109,14 @@ pub async fn list_projects(state: State<'_, AppState>) -> Result<Vec<ProjectReco
 }
 
 #[tauri::command]
-pub async fn get_launch_project(state: State<'_, AppState>) -> Result<Option<ProjectId>, String> {
+pub async fn get_launch_project(
+    state: State<'_, AppState>,
+) -> Result<LaunchProjectInfo, String> {
     let launch_project_id = state.launch_project_id.lock().await;
-    Ok(launch_project_id.clone())
+    Ok(LaunchProjectInfo {
+        project_id: launch_project_id.clone(),
+        locked: launch_project_id.is_some(),
+    })
 }
 
 #[tauri::command]

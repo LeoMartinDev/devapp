@@ -16,6 +16,8 @@ pub enum AppError {
     ProjectStore(String),
     #[error("terminal error: {0}")]
     Terminal(String),
+    #[error("project is launch-locked and cannot be modified")]
+    LaunchLocked,
 }
 
 impl AppError {
