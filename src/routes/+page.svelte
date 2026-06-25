@@ -5,6 +5,7 @@
   import ConfigEditor from "$lib/components/ConfigEditor.svelte";
   import LogViewer from "$lib/components/LogViewer.svelte";
   import ProcessList from "$lib/components/ProcessList.svelte";
+  import RunStopButton from "$lib/components/RunStopButton.svelte";
   import ProjectSettingsDialog from "$lib/components/ProjectSettingsDialog.svelte";
   import TerminalPane from "$lib/components/TerminalPane.svelte";
   import TitleBar from "$lib/components/TitleBar.svelte";
@@ -26,11 +27,12 @@
   $effect(() => {
     const title = runtimeStore.windowTitle;
     document.title = title;
-    setWindowTitle(title);
+    setWindowTitle(title).catch(() => {});
   });
 
   const selectedProcess = $derived(runtimeStore.selectedProcess);
   const selectedTerminal = $derived(runtimeStore.selectedTerminal);
+
 
   const navigableItems = $derived.by(() => {
     const items: Array<
@@ -165,40 +167,55 @@
 <TitleBar />
 
 {#snippet processList()}
-      <section class="min-h-0 overflow-y-auto px-3 pb-4 pt-4">
-        {#if runtimeStore.uiError}
-          <div class="mb-3 rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">
-            <div class="break-words">{runtimeStore.uiError}</div>
-            <Button variant="ghost" size="sm" class="mt-2 h-auto px-0 text-danger/70 hover:bg-transparent hover:text-danger" onclick={() => runtimeStore.clearError()}>
-              Dismiss
-            </Button>
+      <section class="flex min-h-0 flex-col">
+        {#if !runtimeStore.launchLocked}
+          <div class="flex gap-2 px-3 pt-4 pb-3">
+            <RunStopButton
+              active={sessionActive}
+              busy={runtimeStore.busy}
+              disabled={!runtimeStore.projectId}
+              onRun={() => runtimeStore.startCurrentProject()}
+              onStop={() => runtimeStore.stopCurrentProject()}
+            />
           </div>
+          <div class="mx-3 border-t border-border"></div>
         {/if}
 
-        <div class="mb-2 flex items-center justify-between px-1">
-          <h2 class="text-[11px] font-semibold uppercase tracking-wider text-text-subtle">Processes</h2>
-          {#if session}
-            <span class="text-[11px] text-text-subtle">
-              since {new Date(session.startedAt).toLocaleTimeString()}
-            </span>
+        <div class="min-h-0 overflow-y-auto px-3 pb-4 {runtimeStore.launchLocked ? 'pt-4' : 'pt-3'}">
+          {#if runtimeStore.uiError}
+            <div class="mb-3 rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">
+              <div class="break-words">{runtimeStore.uiError}</div>
+              <Button variant="ghost" size="sm" class="mt-2 h-auto px-0 text-danger/70 hover:bg-transparent hover:text-danger" onclick={() => runtimeStore.clearError()}>
+                Dismiss
+              </Button>
+            </div>
           {/if}
+
+          <div class="mb-2 flex items-center justify-between px-1">
+            <h2 class="text-[11px] font-semibold uppercase tracking-wider text-text-subtle">Processes</h2>
+            {#if session}
+              <span class="text-[11px] text-text-subtle">
+                since {new Date(session.startedAt).toLocaleTimeString()}
+              </span>
+            {/if}
+          </div>
+          <ProcessList
+            processes={session?.processes ?? []}
+            terminals={runtimeStore.terminals}
+            selectedProcessRuntimeId={runtimeStore.selectedProcessRuntimeId}
+            selectedTerminalId={runtimeStore.selectedTerminalId}
+            busy={runtimeStore.busy}
+            onSelectProcess={(runtimeId) => runtimeStore.selectProcess(runtimeId)}
+            onSelectTerminal={(terminalId) => runtimeStore.selectTerminal(terminalId)}
+            onStart={(processName) => runtimeStore.startSessionProcess(processName)}
+            onStop={(processName) => runtimeStore.stopSessionProcess(processName)}
+            onRestart={(processName) => runtimeStore.restartSessionProcess(processName)}
+            onCloseTerminal={(terminalId) => {
+              runtimeStore.selectTerminal(terminalId);
+              runtimeStore.closeSelectedTerminal();
+            }}
+          />
         </div>
-        <ProcessList
-          processes={session?.processes ?? []}
-          terminals={runtimeStore.terminals}
-          selectedProcessRuntimeId={runtimeStore.selectedProcessRuntimeId}
-          selectedTerminalId={runtimeStore.selectedTerminalId}
-          busy={runtimeStore.busy}
-          onSelectProcess={(runtimeId) => runtimeStore.selectProcess(runtimeId)}
-          onSelectTerminal={(terminalId) => runtimeStore.selectTerminal(terminalId)}
-          onStart={(processName) => runtimeStore.startSessionProcess(processName)}
-          onStop={(processName) => runtimeStore.stopSessionProcess(processName)}
-          onRestart={(processName) => runtimeStore.restartSessionProcess(processName)}
-          onCloseTerminal={(terminalId) => {
-            runtimeStore.selectTerminal(terminalId);
-            runtimeStore.closeSelectedTerminal();
-          }}
-        />
       </section>
 {/snippet}
 
