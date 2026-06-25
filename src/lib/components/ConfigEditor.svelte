@@ -32,6 +32,7 @@
   let { open, project, onClose }: Props = $props();
 
   let version = $state(1);
+  let globalEnvRows = $state<EnvRow[]>([]);
   let processes = $state<ProcessFormState[]>([]);
   let selectedProcessId = $state<string | null>(null);
   let loadedProjectId = $state<string | null>(null);
@@ -56,6 +57,7 @@
 
   const formState = $derived<ConfigFormState>({
     version,
+    globalEnvRows,
     processes,
   });
 
@@ -77,13 +79,15 @@
 
   function resetEmpty() {
     version = 1;
+    globalEnvRows = [];
     processes = [newProcess("api")];
     selectedProcessId = processes[0].id;
-    rawYaml = serializeConfig(buildConfigFromForm({ version, processes }));
+    rawYaml = serializeConfig(buildConfigFromForm({ version, globalEnvRows, processes }));
   }
 
   function resetUnloaded() {
     version = 1;
+    globalEnvRows = [];
     processes = [];
     selectedProcessId = null;
     rawYaml = "";
@@ -115,6 +119,11 @@
         return;
       }
       version = config.version;
+      globalEnvRows = Object.entries(config.env ?? {}).map(([key, value]) => ({
+        id: nextId("env"),
+        key,
+        value,
+      }));
       processes = Object.entries(config.processes ?? {}).map(([name, process]) =>
         toProcessForm(name, process, nextId),
       );
@@ -139,6 +148,14 @@
 
   function removeEnvRow(process: ProcessFormState, rowId: string) {
     process.envRows = process.envRows.filter((row) => row.id !== rowId);
+  }
+
+  function addGlobalEnvRow() {
+    globalEnvRows = [...globalEnvRows, { id: nextId("env"), key: "", value: "" }];
+  }
+
+  function removeGlobalEnvRow(rowId: string) {
+    globalEnvRows = globalEnvRows.filter((row) => row.id !== rowId);
   }
 
   function addProcess() {
@@ -332,6 +349,12 @@
             <div class="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-warning/90">
               Saving rewrites the generated YAML and may remove comments or unsupported fields.
             </div>
+            <EnvEditor
+              bind:rows={globalEnvRows}
+              {issueFor}
+              onAdd={addGlobalEnvRow}
+              onRemove={removeGlobalEnvRow}
+            />
             {#if selectedProcess}
               <section class="grid gap-4">
                 <ProcessForm

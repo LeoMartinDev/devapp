@@ -39,6 +39,7 @@ export type ProcessForm = {
 
 export type ConfigFormState = {
   version: number;
+  globalEnvRows: EnvRow[];
   processes: ProcessForm[];
 };
 
@@ -109,8 +110,14 @@ export function buildConfig(form: ConfigFormState): DevappConfig {
   const processEntries = form.processes
     .map((process) => [process.name.trim(), buildProcessConfig(process)] as const)
     .filter(([name]) => name.length > 0);
+  const globalEnv = Object.fromEntries(
+    form.globalEnvRows
+      .map((row) => [row.key.trim(), row.value] as const)
+      .filter(([key]) => key.length > 0),
+  );
   return {
     version: form.version,
+    env: Object.keys(globalEnv).length > 0 ? globalEnv : undefined,
     processes: Object.fromEntries(processEntries),
   };
 }
@@ -198,6 +205,13 @@ function optionalPollFields<T extends Extract<ReadyConfig, { intervalMs?: number
 
 export function serializeConfig(config: DevappConfig) {
   const lines: string[] = [`version: ${config.version}`];
+  const envEntries = Object.entries(config.env ?? {});
+  if (envEntries.length > 0) {
+    lines.push("env:");
+    for (const [key, value] of envEntries) {
+      lines.push(`  ${yamlKey(key)}: ${yamlScalar(value)}`);
+    }
+  }
   lines.push("processes:");
   for (const [name, process] of Object.entries(config.processes)) {
     lines.push(`  ${yamlKey(name)}:`);

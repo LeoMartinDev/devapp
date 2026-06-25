@@ -266,6 +266,53 @@ processes:
     }
 
     #[test]
+    fn parses_top_level_env() {
+        let loaded = parse(
+            r#"
+version: 1
+env:
+  NODE_ENV: production
+  LOG_LEVEL: debug
+processes:
+  web:
+    kind: service
+    cmd: deno task dev
+  worker:
+    kind: service
+    cmd: deno task worker
+    env:
+      LOG_LEVEL: trace
+"#,
+        )
+        .expect("config with top-level env should parse");
+
+        assert_eq!(loaded.config.env.len(), 2);
+        assert_eq!(loaded.config.env.get("NODE_ENV"), Some(&"production".to_string()));
+        assert_eq!(loaded.config.env.get("LOG_LEVEL"), Some(&"debug".to_string()));
+        // Per-process env is unchanged
+        assert_eq!(
+            loaded.config.processes["worker"].env.get("LOG_LEVEL"),
+            Some(&"trace".to_string())
+        );
+    }
+
+    #[test]
+    fn top_level_env_defaults_to_empty_when_missing() {
+        let loaded = parse(
+            r#"
+version: 1
+processes:
+  web:
+    kind: service
+    cmd: deno task dev
+"#,
+        )
+        .expect("config without env should parse");
+
+        assert!(loaded.config.env.is_empty());
+    }
+
+    #[test]
     fn rejects_unknown_dependency() {
         let error = parse(
             r#"

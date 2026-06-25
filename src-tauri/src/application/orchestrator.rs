@@ -1,6 +1,7 @@
 use std::{collections::HashMap, sync::Arc, thread};
 
 use chrono::Utc;
+use indexmap::IndexMap;
 use tauri::{AppHandle, Emitter};
 use tokio::{
     io::{AsyncBufReadExt, BufReader},
@@ -327,12 +328,7 @@ impl ProcessOrchestrator {
             if process.child.is_some() {
                 return Ok(());
             }
-            let env = process
-                .config
-                .env
-                .iter()
-                .map(|(key, value)| (key.clone(), value.clone()))
-                .collect::<HashMap<_, _>>();
+            let env = build_process_env(&active.loaded_config.config.env, &process.config.env);
             process.snapshot.status = ProcessStatus::Starting;
             process.snapshot.started_at = Some(Utc::now());
             process.snapshot.exited_at = None;
@@ -773,6 +769,20 @@ fn dependencies_satisfied(
         })
 }
 
+fn build_process_env(
+    global_env: &IndexMap<String, String>,
+    process_env: &IndexMap<String, String>,
+) -> HashMap<String, String> {
+    let mut env: HashMap<_, _> = global_env
+        .iter()
+        .map(|(k, v)| (k.clone(), v.clone()))
+        .collect();
+    for (key, value) in process_env {
+        env.insert(key.clone(), value.clone());
+    }
+    env
+}
+
 fn sync_snapshot_process(
     session_snapshot: &mut RunSessionSnapshot,
     process_snapshot: &ProcessSnapshot,
@@ -871,6 +881,46 @@ mod tests {
             log_tx,
             terminating: false,
         }
+    }
+
+    #[test]
+    fn build_process_env_merges_global_with_process_override() {
+        let mut global_env = IndexMap::new();
+        global_env.insert("NODE_ENV".to_string(), "development".to_string());
+        global_env.insert("LOG_LEVEL".to_string(), "info".to_string());
+        let mut process_env = IndexMap::new();
+        process_env.insert("LOG_LEVEL".to_string(), "debug".to_string());
+        process_env.insert("PORT".to_string(), "3000".to_string());
+
+        let merged = build_process_env(&global_env, &process_env);
+
+        assert_eq!(merged.get("NODE_ENV"), Some(&"development".to_string()));
+        assert_eq!(merged.get("LOG_LEVEL"), Some(&"debug".to_string()));
+        assert_eq!(merged.get("PORT"), Some(&"3000".to_string()));
+    }
+
+    #[test]
+    fn build_process_env_empty_global_returns_only_process_env() {
+        let global_env = IndexMap::new();
+        let mut process_env = IndexMap::new();
+        process_env.insert("PORT".to_string(), "3000".to_string());
+
+        let merged = build_process_env(&global_env, &process_env);
+
+        assert_eq!(merged.len(), 1);
+        assert_eq!(merged.get("PORT"), Some(&"3000".to_string()));
+    }
+
+    #[test]
+    fn build_process_env_empty_process_env_returns_only_global() {
+        let mut global_env = IndexMap::new();
+        global_env.insert("CI".to_string(), "true".to_string());
+        let process_env = IndexMap::new();
+
+        let merged = build_process_env(&global_env, &process_env);
+
+        assert_eq!(merged.len(), 1);
+        assert_eq!(merged.get("CI"), Some(&"true".to_string()));
     }
 
     #[test]

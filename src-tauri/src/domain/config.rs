@@ -7,6 +7,8 @@ const SUPPORTED_CONFIG_VERSION: u32 = 1;
 #[serde(rename_all = "camelCase")]
 pub struct DevappConfig {
     pub version: u32,
+    #[serde(default)]
+    pub env: IndexMap<String, String>,
     pub processes: IndexMap<String, ProcessConfig>,
 }
 
@@ -32,12 +34,15 @@ impl<'de> Deserialize<'de> for DevappConfig {
         #[serde(rename_all = "camelCase")]
         struct RawDevappConfig {
             version: u32,
+            #[serde(default)]
+            env: IndexMap<String, String>,
             processes: IndexMap<String, ProcessConfig>,
         }
 
         let raw = RawDevappConfig::deserialize(deserializer)?;
         let config = DevappConfig {
             version: raw.version,
+            env: raw.env,
             processes: raw.processes,
         };
 
