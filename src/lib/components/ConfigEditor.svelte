@@ -42,6 +42,8 @@ import { runtimeStore } from "$lib/stores/runtime.svelte";
   let dialogWasOpen = $state(false);
   let validationIssues = $state<ValidationIssue[]>([]);
   let showPreview = $state(false);
+  let isDirty = $state(false);
+  let suppressDirty = $state(false);
 
   const selectedProcess = $derived(
     processes.find((process) => process.id === selectedProcessId) ?? processes[0] ?? null,
@@ -103,10 +105,14 @@ import { runtimeStore } from "$lib/stores/runtime.svelte";
       const document = await runtimeStore.loadConfig(projectId);
       const config = document?.config;
       if (!config) {
+        suppressDirty = true;
         resetEmpty();
+        suppressDirty = false;
+        isDirty = false;
         loadedProjectId = projectId;
         return;
       }
+      suppressDirty = true;
       version = config.version;
       globalEnvRows = Object.entries(config.env ?? {}).map(([key, value]) => ({
         id: nextId("env"),
@@ -120,6 +126,8 @@ import { runtimeStore } from "$lib/stores/runtime.svelte";
         processes = [newProcess("api")];
       }
       selectedProcessId = processes[0].id;
+      suppressDirty = false;
+      isDirty = false;
       loadedProjectId = projectId;
     } catch (error) {
       loadError = errorMessage(error);
@@ -209,6 +217,9 @@ import { runtimeStore } from "$lib/stores/runtime.svelte";
 
       const yaml = previewYaml;
       await runtimeStore.saveConfig(yaml, project.id);
+      suppressDirty = true;
+      isDirty = false;
+      suppressDirty = false;
       status = "Settings saved";
       onClose();
     } catch (error) {
@@ -253,6 +264,14 @@ import { runtimeStore } from "$lib/stores/runtime.svelte";
     if (openedNow || projectId !== loadedProjectId) {
       void load(projectId);
     }
+  });
+
+  $effect(() => {
+    void version;
+    void globalEnvRows;
+    void processes;
+    if (suppressDirty) return;
+    isDirty = true;
   });
 </script>
 
@@ -352,13 +371,16 @@ import { runtimeStore } from "$lib/stores/runtime.svelte";
         {:else}
           {status ?? "Changes are saved to the project YAML."}
         {/if}
+        {#if isDirty}
+          <span class="text-warning"> Unsaved changes</span>
+        {/if}
       </div>
       <div class="flex gap-2">
         <Button onclick={onClose} disabled={saving}>
           Cancel
         </Button>
         <Button variant="primary" onclick={save} disabled={!project || saving || loadError !== null}>
-          Save settings
+          Save{isDirty ? " *" : " settings"}
         </Button>
       </div>
     </div>
