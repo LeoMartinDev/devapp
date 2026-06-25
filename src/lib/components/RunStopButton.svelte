@@ -14,7 +14,7 @@
 {#if active}
   <button
     type="button"
-    class="inline-flex items-center justify-center gap-1.5 border border-danger/30 bg-danger/10 font-medium text-danger transition-colors hover:bg-danger/20 disabled:cursor-not-allowed disabled:opacity-55 {compact ? 'h-[26px] rounded-md px-2 text-[11px]' : 'h-8 flex-1 rounded-md px-2 text-xs'}"
+    class="inline-flex items-center justify-center gap-1.5 border border-danger/30 bg-danger/10 font-medium text-danger transition-colors hover:bg-danger/20 disabled:cursor-not-allowed disabled:opacity-55 {compact ? 'h-7 rounded-md px-3 text-xs' : 'h-8 flex-1 rounded-md px-2 text-xs'}"
     onclick={onStop}
     disabled={busy}
     aria-label="Stop current run"
@@ -28,7 +28,7 @@
 {:else}
   <button
     type="button"
-    class="inline-flex items-center justify-center gap-1.5 bg-accent font-medium text-canvas transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-text-subtle {compact ? 'h-[26px] rounded-md px-2 text-[11px]' : 'h-8 flex-1 rounded-md px-2 text-xs'}"
+    class="inline-flex items-center justify-center gap-1.5 bg-accent font-medium text-canvas transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-text-subtle {compact ? 'h-7 rounded-md px-3 text-xs' : 'h-8 flex-1 rounded-md px-2 text-xs'}"
     onclick={onRun}
     disabled={disabled || busy}
     aria-label="Run project"

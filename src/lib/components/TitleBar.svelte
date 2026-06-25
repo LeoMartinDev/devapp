@@ -143,7 +143,7 @@
     align-items: center;
     gap: 6px;
     max-width: 100%;
-    padding: 6px 10px;
+    padding: 8px 12px;
     border-radius: 7px;
     background: var(--color-surface, #0e0f12);
     border: 1px solid var(--color-border, #ffffff14);
