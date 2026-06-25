@@ -25,7 +25,7 @@
 
   async function openTerminal() {
     const terminal = await runtimeStore.openTitledTerminal(
-      session && !session.stoppedAt ? session.projectId : undefined,
+      sessionActive ? session?.projectId : undefined,
     );
     if (terminal) {
       runtimeStore.selectTerminal(terminal.terminalId);
@@ -49,6 +49,7 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <header
   class="titlebar"
+  data-tauri-drag-region
   style:padding-left={isMac ? "74px" : "12px"}
   style:padding-right={isMac ? "8px" : "0"}
   onmousedown={onDragStart}
