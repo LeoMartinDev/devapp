@@ -4,7 +4,6 @@ use indexmap::IndexMap;
 use tokio::sync::mpsc;
 
 use crate::domain::{
-    config::{ProcessConfig, ProcessKind},
     process::ProcessStatus,
 };
 

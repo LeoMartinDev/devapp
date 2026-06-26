@@ -5,7 +5,6 @@ use tokio::sync::broadcast;
 
 use crate::{
     domain::{
-        config::ProcessKind,
         process::ProcessStatus,
         project::ProjectRecord,
         runtime::{ProcessRuntimeId, ProcessSnapshot, RunSessionId, RunSessionSnapshot},
