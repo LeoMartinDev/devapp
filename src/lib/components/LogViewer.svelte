@@ -231,11 +231,11 @@
 <svelte:window onkeydown={handleKeydown} />
 
 <section class="flex h-full min-h-0 flex-col bg-canvas">
-  <div class="flex items-center gap-2 border-b border-border px-3 py-2">
+  <div class="flex items-center gap-1.5 border-b border-border px-2 py-1">
     <div class="relative min-w-0 flex-1">
       <svg
-        class="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-text-subtle"
-        width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        class="pointer-events-none absolute left-1.5 top-1/2 -translate-y-1/2 text-text-subtle"
+        width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
         stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
       >
         <circle cx="11" cy="11" r="8" />
@@ -247,10 +247,10 @@
         type="text"
         placeholder="Search logs"
         spellcheck="false"
-        class="h-8 w-full rounded-md border border-border bg-surface-raised pl-8 pr-3 text-[13px] text-text outline-none transition-colors placeholder:text-text-subtle focus:border-accent"
+        class="h-6 w-full rounded-md border border-border bg-surface-raised pl-6 pr-2 text-[11px] text-text outline-none transition-colors placeholder:text-text-subtle focus:border-accent"
       />
       {#if matchCount !== null}
-        <span class="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-text-subtle">
+        <span class="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] text-text-subtle">
           {matchCount}
         </span>
       {/if}
@@ -288,13 +288,13 @@
       <button
         type="button"
         tabindex="-1"
-        class="grid h-8 w-8 place-items-center rounded-md transition-colors {autoScroll ? 'bg-accent/15 text-accent' : 'text-text-subtle hover:bg-surface-hover hover:text-text'}"
+        class="grid h-6 w-6 place-items-center rounded-md transition-colors {autoScroll ? 'bg-accent/15 text-accent' : 'text-text-subtle hover:bg-surface-hover hover:text-text'}"
         onclick={() => (autoScroll = !autoScroll)}
         aria-pressed={autoScroll}
         aria-label={autoScroll ? "Auto-scroll on" : "Auto-scroll off"}
         title={autoScroll ? "Auto-scroll: on" : "Auto-scroll: off"}
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
           stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <line x1="4" y1="21" x2="20" y2="21" />
           <line x1="12" y1="3" x2="12" y2="18" />
@@ -305,18 +305,18 @@
       <button
         type="button"
         tabindex="-1"
-        class="grid h-8 w-8 place-items-center rounded-md text-text-subtle transition-colors hover:bg-surface-hover hover:text-text"
+        class="grid h-6 w-6 place-items-center rounded-md text-text-subtle transition-colors hover:bg-surface-hover hover:text-text"
         onclick={togglePaused}
         aria-pressed={paused}
         aria-label={paused ? "Resume live log view" : "Pause live log view"}
         title={paused ? "Resume" : "Pause"}
       >
         {#if paused}
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M8 5v14l11-7z" />
           </svg>
         {:else}
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <rect x="6" y="5" width="4" height="14" rx="1" />
             <rect x="14" y="5" width="4" height="14" rx="1" />
           </svg>
@@ -326,12 +326,12 @@
       <button
         type="button"
         tabindex="-1"
-        class="grid h-8 w-8 place-items-center rounded-md text-text-subtle transition-colors hover:bg-surface-hover hover:text-danger"
+        class="grid h-6 w-6 place-items-center rounded-md text-text-subtle transition-colors hover:bg-surface-hover hover:text-danger"
         onclick={clearLogs}
         aria-label="Clear logs"
         title="Clear logs"
       >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
           stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <polyline points="3 6 5 6 21 6" />
           <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
