@@ -228,15 +228,8 @@
             }}
           />
         {:else}
-          <div class="rounded-lg border border-dashed border-border px-3 py-4 text-center">
-            <div class="text-xs text-text-subtle">No terminal open</div>
-            <button
-              type="button"
-              class="mt-2 text-xs text-text-muted underline-offset-2 transition-colors hover:text-text hover:underline"
-              onclick={() => { void openTerminal(); }}
-              disabled={!runtimeStore.projectId}
-            >Open terminal</button>
-            <span class="text-[10px] text-text-subtle"> or Ctrl+T</span>
+          <div class="rounded-lg border border-dashed border-border px-3 py-3 text-center text-[11px] text-text-subtle">
+            Ctrl+T to open
           </div>
         {/if}
       </section>
