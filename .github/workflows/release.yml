@@ -22,7 +22,7 @@ jobs:
         with:
           node-version: "20"
 
-      - run: deno task install
+      - run: deno install
 
       - run: deno task check
       - run: deno task build
@@ -67,7 +67,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - run: deno task install
+      - run: deno install
 
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2

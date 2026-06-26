@@ -1,23 +1,24 @@
 {
   "version": "5",
   "specifiers": {
-    "npm:@sveltejs/adapter-static@^3.0.10": "3.0.10_@sveltejs+kit@2.66.0__@sveltejs+vite-plugin-svelte@7.1.2___svelte@5.56.3___vite@8.0.16____yaml@2.9.0___yaml@2.9.0__svelte@5.56.3__typescript@6.0.3__vite@8.0.16___yaml@2.9.0__yaml@2.9.0_@sveltejs+vite-plugin-svelte@7.1.2__svelte@5.56.3__vite@8.0.16___yaml@2.9.0__yaml@2.9.0_svelte@5.56.3_typescript@6.0.3_vite@8.0.16__yaml@2.9.0_yaml@2.9.0",
-    "npm:@sveltejs/kit@^2.66.0": "2.66.0_@sveltejs+vite-plugin-svelte@7.1.2__svelte@5.56.3__vite@8.0.16___yaml@2.9.0__yaml@2.9.0_svelte@5.56.3_typescript@6.0.3_vite@8.0.16__yaml@2.9.0_yaml@2.9.0",
-    "npm:@sveltejs/vite-plugin-svelte@^7.1.2": "7.1.2_svelte@5.56.3_vite@8.0.16__yaml@2.9.0_yaml@2.9.0",
-    "npm:@tailwindcss/vite@^4.3.1": "4.3.1_vite@8.0.16__yaml@2.9.0_yaml@2.9.0",
+    "npm:@sveltejs/adapter-static@^3.0.10": "3.0.10_@sveltejs+kit@2.66.0__@sveltejs+vite-plugin-svelte@7.1.2___svelte@5.56.3___vite@8.0.16____@types+node@22.20.0____yaml@2.9.0___@types+node@22.20.0__svelte@5.56.3__typescript@6.0.3__vite@8.0.16___@types+node@22.20.0___yaml@2.9.0__@types+node@22.20.0_@types+node@22.20.0",
+    "npm:@sveltejs/kit@^2.66.0": "2.66.0_@sveltejs+vite-plugin-svelte@7.1.2__svelte@5.56.3__vite@8.0.16___@types+node@22.20.0___yaml@2.9.0__@types+node@22.20.0_svelte@5.56.3_typescript@6.0.3_vite@8.0.16__@types+node@22.20.0__yaml@2.9.0_@types+node@22.20.0",
+    "npm:@sveltejs/vite-plugin-svelte@^7.1.2": "7.1.2_svelte@5.56.3_vite@8.0.16__@types+node@22.20.0__yaml@2.9.0_@types+node@22.20.0",
+    "npm:@tailwindcss/vite@^4.3.1": "4.3.1_vite@8.0.16__@types+node@22.20.0__yaml@2.9.0_@types+node@22.20.0",
     "npm:@tauri-apps/api@^2.11.1": "2.11.1",
     "npm:@tauri-apps/cli@^2.11.3": "2.11.3",
     "npm:@tauri-apps/plugin-opener@^2.5.4": "2.5.4",
     "npm:@testing-library/jest-dom@^6.9.1": "6.9.1",
-    "npm:@testing-library/svelte@^5.4.0": "5.4.0_svelte@5.56.3_vite@8.0.16__yaml@2.9.0_vitest@4.1.9__jsdom@29.1.1__vite@8.0.16___yaml@2.9.0__yaml@2.9.0_jsdom@29.1.1_yaml@2.9.0",
+    "npm:@testing-library/svelte@^5.4.0": "5.4.0_svelte@5.56.3_vite@8.0.16__@types+node@22.20.0__yaml@2.9.0_vitest@4.1.9__@types+node@22.20.0__jsdom@29.1.1__vite@8.0.16___@types+node@22.20.0___yaml@2.9.0_@types+node@22.20.0",
+    "npm:@types/node@22": "22.20.0",
     "npm:@xterm/addon-fit@0.11": "0.11.0",
     "npm:jsdom@^29.1.1": "29.1.1",
     "npm:svelte-check@^4.6.0": "4.6.0_svelte@5.56.3_typescript@6.0.3",
     "npm:svelte@^5.56.3": "5.56.3",
     "npm:tailwindcss@^4.3.1": "4.3.1",
     "npm:typescript@~6.0.3": "6.0.3",
-    "npm:vite@^8.0.16": "8.0.16_yaml@2.9.0",
-    "npm:vitest@^4.1.9": "4.1.9_jsdom@29.1.1_vite@8.0.16__yaml@2.9.0_yaml@2.9.0",
+    "npm:vite@^8.0.16": "8.0.16_@types+node@22.20.0_yaml@2.9.0",
+    "npm:vitest@^4.1.9": "4.1.9_@types+node@22.20.0_jsdom@29.1.1_vite@8.0.16__@types+node@22.20.0__yaml@2.9.0",
     "npm:xterm@^5.3.0": "5.3.0",
     "npm:yaml@^2.9.0": "2.9.0"
   },
@@ -263,13 +264,13 @@
         "acorn"
       ]
     },
-    "@sveltejs/adapter-static@3.0.10_@sveltejs+kit@2.66.0__@sveltejs+vite-plugin-svelte@7.1.2___svelte@5.56.3___vite@8.0.16____yaml@2.9.0___yaml@2.9.0__svelte@5.56.3__typescript@6.0.3__vite@8.0.16___yaml@2.9.0__yaml@2.9.0_@sveltejs+vite-plugin-svelte@7.1.2__svelte@5.56.3__vite@8.0.16___yaml@2.9.0__yaml@2.9.0_svelte@5.56.3_typescript@6.0.3_vite@8.0.16__yaml@2.9.0_yaml@2.9.0": {
+    "@sveltejs/adapter-static@3.0.10_@sveltejs+kit@2.66.0__@sveltejs+vite-plugin-svelte@7.1.2___svelte@5.56.3___vite@8.0.16____@types+node@22.20.0____yaml@2.9.0___@types+node@22.20.0__svelte@5.56.3__typescript@6.0.3__vite@8.0.16___@types+node@22.20.0___yaml@2.9.0__@types+node@22.20.0_@types+node@22.20.0": {
       "integrity": "sha512-7D9lYFWJmB7zxZyTE/qxjksvMqzMuYrrsyh1f4AlZqeZeACPRySjbC3aFiY55wb1tWUaKOQG9PVbm74JcN2Iew==",
       "dependencies": [
         "@sveltejs/kit"
       ]
     },
-    "@sveltejs/kit@2.66.0_@sveltejs+vite-plugin-svelte@7.1.2__svelte@5.56.3__vite@8.0.16___yaml@2.9.0__yaml@2.9.0_svelte@5.56.3_typescript@6.0.3_vite@8.0.16__yaml@2.9.0_yaml@2.9.0": {
+    "@sveltejs/kit@2.66.0_@sveltejs+vite-plugin-svelte@7.1.2__svelte@5.56.3__vite@8.0.16___@types+node@22.20.0___yaml@2.9.0__@types+node@22.20.0_svelte@5.56.3_typescript@6.0.3_vite@8.0.16__@types+node@22.20.0__yaml@2.9.0_@types+node@22.20.0": {
       "integrity": "sha512-7nN4Ur4+nofZ36DVo83JbRe02m61Vc+I441mML/DYa1pUTZ/x26+lbrdqPen8gjmsUc6flMtHEqAtn0UfmfvAw==",
       "dependencies": [
         "@standard-schema/spec",
@@ -297,7 +298,7 @@
     "@sveltejs/load-config@0.1.1": {
       "integrity": "sha512-BXXm+VOH/9X4N7Dd1iZ2MqA1h7M+9i2noI8QYuLDY8QcN2WHYn7D/VK/+IJNfcAmRw7ACNJ538UT9GXIhnBTiA=="
     },
-    "@sveltejs/vite-plugin-svelte@7.1.2_svelte@5.56.3_vite@8.0.16__yaml@2.9.0_yaml@2.9.0": {
+    "@sveltejs/vite-plugin-svelte@7.1.2_svelte@5.56.3_vite@8.0.16__@types+node@22.20.0__yaml@2.9.0_@types+node@22.20.0": {
       "integrity": "sha512-DrUBA2UXRfDmUX/ZTiEopd3X40yavsJF1FX2RygcuIScHL7o5YX1fMvoYnDhjeJQC4weCOklirpNWlcb2NiSeA==",
       "dependencies": [
         "deepmerge",
@@ -396,7 +397,7 @@
         "@tailwindcss/oxide-win32-x64-msvc"
       ]
     },
-    "@tailwindcss/vite@4.3.1_vite@8.0.16__yaml@2.9.0_yaml@2.9.0": {
+    "@tailwindcss/vite@4.3.1_vite@8.0.16__@types+node@22.20.0__yaml@2.9.0_@types+node@22.20.0": {
       "integrity": "sha512-hItDHuIIlEV61R+faXu66s1K36aTurO/Qw0e45Vskz57gXl9pWOT6eg3zmcEui6CZXddbN7zd41bwmvag4JGwQ==",
       "dependencies": [
         "@tailwindcss/node",
@@ -516,7 +517,7 @@
         "svelte"
       ]
     },
-    "@testing-library/svelte@5.4.0_svelte@5.56.3_vite@8.0.16__yaml@2.9.0_vitest@4.1.9__jsdom@29.1.1__vite@8.0.16___yaml@2.9.0__yaml@2.9.0_jsdom@29.1.1_yaml@2.9.0": {
+    "@testing-library/svelte@5.4.0_svelte@5.56.3_vite@8.0.16__@types+node@22.20.0__yaml@2.9.0_vitest@4.1.9__@types+node@22.20.0__jsdom@29.1.1__vite@8.0.16___@types+node@22.20.0___yaml@2.9.0_@types+node@22.20.0": {
       "integrity": "sha512-7DyHgWrgxGpPEBLO11BC503eg282qKYvbyFKGB9oyCI59R7fPZxX/qdVTrE0nwTgWUDr53A9cH4fzCNd0Su4+g==",
       "dependencies": [
         "@testing-library/dom",
@@ -555,6 +556,12 @@
     "@types/estree@1.0.9": {
       "integrity": "sha512-GhdPgy1el4/ImP05X05Uw4cw2/M93BCUmnEvWZNStlCzEKME4Fkk+YpoA5OiHNQmoS7Cafb8Xa3Pya8m1Qrzeg=="
     },
+    "@types/node@22.20.0": {
+      "integrity": "sha512-QWlFW2wf3nTjC13/DqRnBpR4ZO36VJH/JVBkA/vcnmbTBNQIlnObqyqZE1tUR7+Ni23Lda8R1BxMfbXRpCUx5g==",
+      "dependencies": [
+        "undici-types"
+      ]
+    },
     "@types/trusted-types@2.0.7": {
       "integrity": "sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw=="
     },
@@ -569,7 +576,7 @@
         "tinyrainbow"
       ]
     },
-    "@vitest/mocker@4.1.9_vite@8.0.16__yaml@2.9.0_yaml@2.9.0": {
+    "@vitest/mocker@4.1.9_vite@8.0.16__@types+node@22.20.0__yaml@2.9.0_@types+node@22.20.0": {
       "integrity": "sha512-EVkXzBjrPGM+cK8/ANWgBrkUCfJfb38/EfTSO8h7pWvKkyPkpWxvR7BkD2MyItMF62C97zAEoqdpUixwR/e+Rw==",
       "dependencies": [
         "@vitest/spy",
@@ -1126,12 +1133,16 @@
       "integrity": "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw==",
       "bin": true
     },
+    "undici-types@6.21.0": {
+      "integrity": "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="
+    },
     "undici@7.28.0": {
       "integrity": "sha512-cRZYrTDwWznlnRiPjggAGxZXanty6M8RV1ff8Wm4LWXBp7/IG8v5DnOm74DtUBp9OONpK75YlPnIjQqX0dBDtA=="
     },
-    "vite@8.0.16_yaml@2.9.0": {
+    "vite@8.0.16_@types+node@22.20.0_yaml@2.9.0": {
       "integrity": "sha512-h9bXPmJichP5fLmVQo3PyaGSDE2n3aPuomeAlVRm0JLmt4rY6zmPKd59HYI4LNW8oTK7tlTsuC7l/m7awx9Jcw==",
       "dependencies": [
+        "@types/node",
         "lightningcss",
         "picomatch",
         "postcss",
@@ -1143,11 +1154,12 @@
         "fsevents"
       ],
       "optionalPeers": [
+        "@types/node",
         "yaml"
       ],
       "bin": true
     },
-    "vitefu@1.1.3_vite@8.0.16__yaml@2.9.0_yaml@2.9.0": {
+    "vitefu@1.1.3_vite@8.0.16__@types+node@22.20.0__yaml@2.9.0_@types+node@22.20.0": {
       "integrity": "sha512-ub4okH7Z5KLjb6hDyjqrGXqWtWvoYdU3IGm/NorpgHncKoLTCfRIbvlhBm7r0YstIaQRYlp4yEbFqDcKSzXSSg==",
       "dependencies": [
         "vite"
@@ -1156,9 +1168,10 @@
         "vite"
       ]
     },
-    "vitest@4.1.9_jsdom@29.1.1_vite@8.0.16__yaml@2.9.0_yaml@2.9.0": {
+    "vitest@4.1.9_@types+node@22.20.0_jsdom@29.1.1_vite@8.0.16__@types+node@22.20.0__yaml@2.9.0": {
       "integrity": "sha512-nE3/LEyc0z87uHYLZebqCUOaJr2hdtuPp7BQ4BosVFnfltxgAvMG08NyrSGlPpOUWvR27c5flSmYFTNr78L9GQ==",
       "dependencies": [
+        "@types/node",
         "@vitest/expect",
         "@vitest/mocker",
         "@vitest/pretty-format",
@@ -1182,6 +1195,7 @@
         "why-is-node-running"
       ],
       "optionalPeers": [
+        "@types/node",
         "jsdom"
       ],
       "bin": true
@@ -1244,6 +1258,7 @@
         "npm:@tauri-apps/plugin-opener@^2.5.4",
         "npm:@testing-library/jest-dom@^6.9.1",
         "npm:@testing-library/svelte@^5.4.0",
+        "npm:@types/node@22",
         "npm:@xterm/addon-fit@0.11",
         "npm:jsdom@^29.1.1",
         "npm:svelte-check@^4.6.0",
