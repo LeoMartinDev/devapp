@@ -307,7 +307,7 @@ class RuntimeStore {
   async restartSessionProcess(processName: string) {
     this.busy = true;
     try {
-      await restartProcess(processName);
+      this.session = await restartProcess(processName);
       this.syncProcessSelection();
     } catch (error) {
       this.setError(error);
@@ -333,7 +333,7 @@ class RuntimeStore {
   async stopSessionProcess(processName: string) {
     this.busy = true;
     try {
-      await stopProcess(processName);
+      this.session = await stopProcess(processName);
       this.syncProcessSelection();
     } catch (error) {
       this.setError(error);
@@ -497,7 +497,27 @@ class RuntimeStore {
   }
 
   setError(error: unknown) {
-    this.uiError = error instanceof Error ? error.message : String(error);
+    const raw = error instanceof Error ? error.message : String(error);
+    try {
+      const parsed = JSON.parse(raw) as { message: string; code: string };
+      if (parsed.code && parsed.message) {
+        const msgs: Record<string, string> = {
+          configNotFound: "Config file not found. Check that devapp.yml exists.",
+          projectAlreadyRunning: "A project is already running in this window.",
+          launchLocked: "Project is locked by command-line launch and cannot be modified.",
+          processCannotRestart:
+            "Tasks cannot be restarted — only services support restart.",
+          readinessTimeout:
+            "Process readiness check timed out. Check the readiness config.",
+          readinessCheckFailed:
+            "Process readiness check failed. Verify the readiness command or URL.",
+          projectNotFound: "Project not found. It may have been deleted.",
+        };
+        this.uiError = msgs[parsed.code] ?? parsed.message;
+        return;
+      }
+    } catch {}
+    this.uiError = raw;
   }
 
   async #attachEventListeners() {

@@ -7,11 +7,17 @@ pub mod tauri_api;
 use std::path::PathBuf;
 
 use tauri::Manager;
+use tracing::{error, warn};
 
 use crate::tauri_api::state::AppState;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    tracing_subscriber::fmt()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .with_target(false)
+        .init();
+
     let app_state = AppState::new().expect("failed to initialize app state");
     tauri::Builder::default()
         .manage(app_state)
@@ -19,16 +25,16 @@ pub fn run() {
         .setup(|app| {
             #[cfg(target_os = "macos")]
             if let Some(window) = app.get_webview_window("main") {
-                window
-                    .set_title_bar_style(tauri::TitleBarStyle::Overlay)
-                    .expect("failed to set titlebar overlay style on macOS");
+                if let Err(err) = window.set_title_bar_style(tauri::TitleBarStyle::Overlay) {
+                    warn!(error = %err, "failed to set titlebar overlay style on macOS");
+                }
             }
 
             #[cfg(not(target_os = "macos"))]
             if let Some(window) = app.get_webview_window("main") {
-                window
-                    .set_decorations(false)
-                    .expect("failed to disable window decorations");
+                if let Err(err) = window.set_decorations(false) {
+                    warn!(error = %err, "failed to disable window decorations");
+                }
             }
 
             let state = app.state::<AppState>().inner().clone();
@@ -43,7 +49,10 @@ pub fn run() {
                 }
                 Ok::<(), crate::error::AppError>(())
             })
-            .map_err(|error| Box::<dyn std::error::Error>::from(error.to_string()))?;
+            .map_err(|err| {
+                error!(error = %err, code = ?err.code(), "failed to import launch config");
+                Box::<dyn std::error::Error>::from(err.to_string())
+            })?;
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

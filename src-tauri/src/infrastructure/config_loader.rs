@@ -6,7 +6,7 @@ use std::{
 
 use crate::{
     domain::config::{DevappConfig, ReadyConfig},
-    error::AppError,
+    error::{AppError, ErrorCode},
 };
 
 const PROJECT_CONFIG_FILE_NAME: &str = "devapp.yml";
@@ -41,6 +41,13 @@ pub fn load_config(config_path: &Path) -> Result<LoadedProjectConfig, AppError> 
         config,
         raw_yaml,
     })
+}
+
+pub async fn load_config_async(config_path: &Path) -> Result<LoadedProjectConfig, AppError> {
+    let path = config_path.to_path_buf();
+    tokio::task::spawn_blocking(move || load_config(&path))
+        .await
+        .map_err(|e| AppError::runtime_with_code(e.to_string(), ErrorCode::IoError))?
 }
 
 pub fn parse_config_document(
@@ -80,28 +87,36 @@ pub fn find_project_config(base_dir: &Path) -> Result<Option<PathBuf>, AppError>
 
 pub fn validate_graph(config: &DevappConfig) -> Result<(), AppError> {
     if config.processes.is_empty() {
-        return Err(AppError::validation(
+        return Err(AppError::validation_with_code(
             "configuration must declare at least one process",
+            crate::error::ErrorCode::ConfigValidationFailed,
         ));
     }
 
     for (name, process) in &config.processes {
         if name.trim().is_empty() {
-            return Err(AppError::validation("process name cannot be empty"));
+            return Err(AppError::validation_with_code(
+                "process name cannot be empty",
+                crate::error::ErrorCode::ConfigValidationFailed,
+            ));
         }
         if process.cmd.trim().is_empty() {
-            return Err(AppError::validation(format!(
-                "process `{name}` must declare a non-empty cmd"
-            )));
+            return Err(AppError::validation_with_code(
+                format!("process `{name}` must declare a non-empty cmd"),
+                crate::error::ErrorCode::ConfigValidationFailed,
+            ));
         }
         if let Some(ready) = &process.ready {
             validate_ready_config(name, ready)?;
         }
         for dependency_name in process.depends_on.keys() {
             if !config.processes.contains_key(dependency_name) {
-                return Err(AppError::validation(format!(
-                    "process `{name}` depends on unknown process `{dependency_name}`"
-                )));
+                return Err(AppError::validation_with_code(
+                    format!(
+                        "process `{name}` depends on unknown process `{dependency_name}`"
+                    ),
+                    crate::error::ErrorCode::ConfigUnknownProcess,
+                ));
             }
         }
     }
@@ -119,26 +134,38 @@ fn validate_ready_config(process_name: &str, ready: &ReadyConfig) -> Result<(), 
     match ready {
         ReadyConfig::Http(config) => {
             let url = reqwest::Url::parse(&config.url).map_err(|error| {
-                AppError::validation(format!(
-                    "process `{process_name}` has invalid http readiness URL `{}`: {error}",
-                    config.url
-                ))
+                AppError::validation_with_code(
+                    format!(
+                        "process `{process_name}` has invalid http readiness URL `{}`: {error}",
+                        config.url
+                    ),
+                    crate::error::ErrorCode::ConfigValidationFailed,
+                )
             })?;
             if !matches!(url.scheme(), "http" | "https") || url.host_str().is_none() {
-                return Err(AppError::validation(format!(
-                    "process `{process_name}` http readiness URL must be an absolute http(s) URL"
-                )));
+                return Err(AppError::validation_with_code(
+                    format!(
+                        "process `{process_name}` http readiness URL must be an absolute http(s) URL"
+                    ),
+                    crate::error::ErrorCode::ConfigValidationFailed,
+                ));
             }
         }
         ReadyConfig::Log(config) if config.pattern.trim().is_empty() => {
-            return Err(AppError::validation(format!(
-                "process `{process_name}` log readiness pattern cannot be empty"
-            )));
+            return Err(AppError::validation_with_code(
+                format!(
+                    "process `{process_name}` log readiness pattern cannot be empty"
+                ),
+                crate::error::ErrorCode::ConfigValidationFailed,
+            ));
         }
         ReadyConfig::Command(config) if config.cmd.trim().is_empty() => {
-            return Err(AppError::validation(format!(
-                "process `{process_name}` command readiness cmd cannot be empty"
-            )));
+            return Err(AppError::validation_with_code(
+                format!(
+                    "process `{process_name}` command readiness cmd cannot be empty"
+                ),
+                crate::error::ErrorCode::ConfigValidationFailed,
+            ));
         }
         ReadyConfig::Delay(_) | ReadyConfig::Log(_) | ReadyConfig::Command(_) => {}
     }
@@ -156,15 +183,21 @@ fn visit_process(
         return Ok(());
     }
     if !visiting.insert(name.to_string()) {
-        return Err(AppError::validation(format!(
-            "dependency cycle detected at process `{name}`"
-        )));
+        return Err(AppError::validation_with_code(
+            format!("dependency cycle detected at process `{name}`"),
+            crate::error::ErrorCode::ConfigDependencyCycle,
+        ));
     }
 
     let process = config
         .processes
         .get(name)
-        .ok_or_else(|| AppError::validation(format!("unknown process `{name}`")))?;
+        .ok_or_else(|| {
+            AppError::validation_with_code(
+                format!("unknown process `{name}`"),
+                crate::error::ErrorCode::ConfigUnknownProcess,
+            )
+        })?;
     for dependency_name in process.depends_on.keys() {
         visit_process(dependency_name, config, visiting, visited)?;
     }

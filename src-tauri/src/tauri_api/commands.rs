@@ -12,9 +12,9 @@ use crate::{
         runtime::RunSessionSnapshot,
         terminal::{TerminalSessionId, TerminalSnapshot},
     },
-    error::AppError,
+    error::{AppError, ErrorCode},
     infrastructure::{
-        config_loader::{load_config, parse_config_document},
+        config_loader::{load_config_async, parse_config_document},
         git_info::{self, GitInfo},
     },
     tauri_api::state::AppState,
@@ -100,6 +100,21 @@ pub struct CloseTerminalRequest {
     pub terminal_id: TerminalSessionId,
 }
 
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct AppErrorPayload {
+    message: String,
+    code: ErrorCode,
+}
+
+fn to_error_string(error: AppError) -> String {
+    let payload = AppErrorPayload {
+        message: error.to_string(),
+        code: error.code(),
+    };
+    serde_json::to_string(&payload).unwrap_or_else(|_| error.to_string())
+}
+
 fn window_key(window: &WebviewWindow) -> String {
     window.label().to_string()
 }
@@ -114,7 +129,7 @@ async fn check_launch_locked(state: &AppState) -> Result<(), String> {
 #[tauri::command]
 pub async fn list_projects(state: State<'_, AppState>) -> Result<Vec<ProjectRecord>, String> {
     let store = state.project_store.lock().await;
-    store.load().map_err(String::from)
+    store.load().map_err(to_error_string)
 }
 
 #[tauri::command]
@@ -142,8 +157,8 @@ pub async fn save_project(
             request.base_dir,
             request.config_source,
         )
-        .map_err(String::from)?;
-    store.upsert(record).map_err(String::from)
+        .map_err(to_error_string)?;
+    store.upsert(record).map_err(to_error_string)
 }
 
 #[tauri::command]
@@ -153,7 +168,7 @@ pub async fn remove_project(
 ) -> Result<(), String> {
     check_launch_locked(&state).await?;
     let store = state.project_store.lock().await;
-    store.remove(&project_id).map_err(String::from)
+    store.remove(&project_id).map_err(to_error_string)
 }
 
 #[tauri::command]
@@ -164,17 +179,17 @@ pub async fn load_project_config(
     let store = state.project_store.lock().await;
     let project = store
         .get(&request.project_id)
-        .map_err(String::from)?
+        .map_err(to_error_string)?
         .ok_or_else(|| AppError::project_store("project not found").to_string())?;
 
     let yaml = match request.yaml {
         Some(yaml) => yaml,
         None => store
             .load_project_config_raw(&project)
-            .map_err(String::from)?,
+            .map_err(to_error_string)?,
     };
 
-    let loaded = parse_config_document(&project.config_path, &yaml).map_err(String::from)?;
+    let loaded = parse_config_document(&project.config_path, &yaml).map_err(to_error_string)?;
     Ok(ProjectConfigDocument {
         project,
         yaml,
@@ -190,13 +205,13 @@ pub async fn save_project_config(
     let store = state.project_store.lock().await;
     let project = store
         .get(&request.project_id)
-        .map_err(String::from)?
+        .map_err(to_error_string)?
         .ok_or_else(|| AppError::project_store("project not found").to_string())?;
     let loaded =
-        parse_config_document(&project.config_path, &request.yaml).map_err(String::from)?;
+        parse_config_document(&project.config_path, &request.yaml).map_err(to_error_string)?;
     store
         .save_project_config_raw(&project, &request.yaml)
-        .map_err(String::from)?;
+        .map_err(to_error_string)?;
     Ok(ProjectConfigDocument {
         project,
         yaml: request.yaml,
@@ -224,16 +239,16 @@ pub async fn start_project(
         let store = state.project_store.lock().await;
         store
             .get(&request.project_id)
-            .map_err(String::from)?
+            .map_err(to_error_string)?
             .ok_or_else(|| AppError::project_store("project not found").to_string())?
     };
 
-    let loaded = load_config(&project.config_path).map_err(String::from)?;
+    let loaded = load_config_async(&project.config_path).await.map_err(to_error_string)?;
     state
         .orchestrator
         .start_session(app_handle, window_key(&window), project, loaded)
         .await
-        .map_err(String::from)
+        .map_err(to_error_string)
 }
 
 #[tauri::command]
@@ -247,11 +262,11 @@ pub async fn stop_project(
         .orchestrator
         .stop_session(app_handle.clone(), &key)
         .await
-        .map_err(String::from)?;
+        .map_err(to_error_string)?;
     state
         .terminal_manager
         .close_all_for_window(app_handle, &key)
-        .map_err(String::from)?;
+        .map_err(to_error_string)?;
     Ok(snapshot)
 }
 
@@ -266,7 +281,7 @@ pub async fn restart_process(
         .orchestrator
         .restart_process(app_handle, &window_key(&window), &request.process_name)
         .await
-        .map_err(String::from)
+        .map_err(to_error_string)
 }
 
 #[tauri::command]
@@ -280,7 +295,7 @@ pub async fn start_process(
         .orchestrator
         .start_process(app_handle, &window_key(&window), &request.process_name)
         .await
-        .map_err(String::from)
+        .map_err(to_error_string)
 }
 
 #[tauri::command]
@@ -294,7 +309,7 @@ pub async fn stop_process(
         .orchestrator
         .stop_process(app_handle, &window_key(&window), &request.process_name)
         .await
-        .map_err(String::from)
+        .map_err(to_error_string)
 }
 
 #[tauri::command]
@@ -306,7 +321,7 @@ pub async fn get_session_snapshot(
         .orchestrator
         .snapshot(&window_key(&window))
         .await
-        .map_err(String::from)
+        .map_err(to_error_string)
 }
 
 #[tauri::command]
@@ -320,7 +335,7 @@ pub async fn open_terminal(
         let store = state.project_store.lock().await;
         store
             .get(&request.project_id)
-            .map_err(String::from)?
+            .map_err(to_error_string)?
             .ok_or_else(|| AppError::project_store("project not found").to_string())?
     };
     state
@@ -335,7 +350,7 @@ pub async fn open_terminal(
             request.cols.unwrap_or(100),
             request.rows.unwrap_or(28),
         )
-        .map_err(String::from)
+        .map_err(to_error_string)
 }
 
 #[tauri::command]
@@ -346,7 +361,7 @@ pub async fn write_terminal(
     state
         .terminal_manager
         .write_terminal(&request.terminal_id, &request.data)
-        .map_err(String::from)
+        .map_err(to_error_string)
 }
 
 #[tauri::command]
@@ -357,7 +372,7 @@ pub async fn resize_terminal(
     state
         .terminal_manager
         .resize_terminal(&request.terminal_id, request.cols, request.rows)
-        .map_err(String::from)
+        .map_err(to_error_string)
 }
 
 #[tauri::command]
@@ -369,7 +384,7 @@ pub async fn close_terminal(
     state
         .terminal_manager
         .close_terminal(app_handle, &request.terminal_id)
-        .map_err(String::from)
+        .map_err(to_error_string)
 }
 
 #[tauri::command]
@@ -389,7 +404,7 @@ pub async fn open_project_window(
         let store = state.project_store.lock().await;
         store
             .get(&request.project_id)
-            .map_err(String::from)?
+            .map_err(to_error_string)?
             .ok_or_else(|| AppError::project_store("project not found").to_string())?
     };
 
