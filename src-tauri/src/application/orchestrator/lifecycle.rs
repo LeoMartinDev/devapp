@@ -58,7 +58,7 @@ pub(super) fn begin_process_termination(process: &mut ManagedProcess) -> Option<
     #[cfg(unix)]
     if let Some(pid) = process.pid {
         unsafe {
-            libc::kill(pid as i32, libc::SIGKILL);
+            libc::kill(-(pid as i32), libc::SIGKILL);
         }
     }
 

@@ -13,9 +13,9 @@
   --color-surface-raised: #15171b; /* selected card, input bg, active segment */
   --color-surface-hover: #1b1d22; /* hover states */
 
-  /* Borders — near-invisible hairlines */
-  --color-border: #ffffff14; /* ~8% white */
-  --color-border-strong: #ffffff26; /* ~15% white, focus ring base */
+  /* Borders — subtle hairlines */
+  --color-border: #ffffff1e; /* ~12% white */
+  --color-border-strong: #ffffff30; /* ~19% white, focus ring base */
 
   /* Text */
   --color-text: #e7e9ee; /* primary */

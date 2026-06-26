@@ -403,6 +403,7 @@ impl ProcessOrchestrator {
         let process_name_for_wait = process_name.to_string();
         let exit_app_handle = app_handle.clone();
         let exit_window_key = window_key.to_string();
+        let wait_pid = child_pid;
         thread::spawn(move || {
             tauri::async_runtime::block_on(async move {
                 let exit_status = {
@@ -410,6 +411,12 @@ impl ProcessOrchestrator {
                     tokio::select! {
                         result = child.wait() => result,
                         _ = kill_rx.recv() => {
+                            #[cfg(unix)]
+                            if let Some(pid) = wait_pid {
+                                unsafe {
+                                    libc::kill(-(pid as i32), libc::SIGKILL);
+                                }
+                            }
                             let _ = child.kill().await;
                             child.wait().await
                         }

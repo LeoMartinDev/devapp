@@ -170,6 +170,20 @@
     system: "border-l-[#5b8def]",
   };
 
+  const borderCornerClass = $derived((indexInLogs: number): string => {
+    const entry = filteredLogs[indexInLogs];
+    if (!entry) return "";
+    const prev = indexInLogs > 0 ? filteredLogs[indexInLogs - 1] : null;
+    const next = indexInLogs < filteredLogs.length - 1 ? filteredLogs[indexInLogs + 1] : null;
+    const sameAsPrev = prev !== null && prev.stream === entry.stream;
+    const sameAsNext = next !== null && next.stream === entry.stream;
+
+    if (!sameAsPrev && !sameAsNext) return "rounded-tl rounded-bl";
+    if (!sameAsPrev) return "rounded-tl";
+    if (!sameAsNext) return "rounded-bl";
+    return "";
+  });
+
   function escapeRegExp(s: string): string {
     return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }
@@ -274,9 +288,7 @@
       <button
         type="button"
         tabindex="-1"
-        class={`grid h-8 w-8 place-items-center rounded-md text-text-subtle transition-colors hover:bg-surface-hover hover:text-text ${
-          autoScroll ? "text-accent hover:text-accent" : ""
-        }`}
+        class="grid h-8 w-8 place-items-center rounded-md transition-colors {autoScroll ? 'bg-accent/15 text-accent' : 'text-text-subtle hover:bg-surface-hover hover:text-text'}"
         onclick={() => (autoScroll = !autoScroll)}
         aria-pressed={autoScroll}
         aria-label={autoScroll ? "Auto-scroll on" : "Auto-scroll off"}
@@ -284,7 +296,9 @@
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
           stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <polyline points="6 9 12 15 18 9" />
+          <line x1="4" y1="21" x2="20" y2="21" />
+          <line x1="12" y1="3" x2="12" y2="18" />
+          <polyline points="8 14 12 18 16 14" />
         </svg>
       </button>
 
@@ -307,6 +321,23 @@
             <rect x="14" y="5" width="4" height="14" rx="1" />
           </svg>
         {/if}
+      </button>
+
+      <button
+        type="button"
+        tabindex="-1"
+        class="grid h-8 w-8 place-items-center rounded-md text-text-subtle transition-colors hover:bg-surface-hover hover:text-danger"
+        onclick={clearLogs}
+        aria-label="Clear logs"
+        title="Clear logs"
+      >
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="3 6 5 6 21 6" />
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+          <line x1="10" y1="11" x2="10" y2="17" />
+          <line x1="14" y1="11" x2="14" y2="17" />
+        </svg>
       </button>
     </div>
   </div>
@@ -335,7 +366,7 @@
         {#each visibleItems as entry, index (`${entry.timestamp}-${startIndex + index}`)}
           <div
             style="position: absolute; top: {(startIndex + index) * ROW_HEIGHT}px; left: 0; right: 0; height: {ROW_HEIGHT}px;"
-            class="group flex items-center gap-3 rounded px-3 hover:bg-surface-hover/40 border-l-[3px] {borderByStream[entry.stream] ?? 'border-l-transparent'}"
+            class="group flex items-center gap-3 px-3 hover:bg-surface-hover/40 border-l-[3px] {borderByStream[entry.stream] ?? 'border-l-transparent'} {borderCornerClass(startIndex + index)}"
           >
             <span class="shrink-0 select-none text-text-subtle">
               {new Date(entry.timestamp).toLocaleTimeString()}
