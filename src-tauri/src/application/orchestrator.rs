@@ -310,14 +310,13 @@ impl ProcessOrchestrator {
         window_key: &str,
         process_name: &str,
     ) -> Result<(), AppError> {
-        let (session_id, project_name, base_dir, env, config, runtime_id, log_tx) = {
+        let (session_id, _, base_dir, env, config, runtime_id, log_tx) = {
             let mut state = self.inner.lock().await;
             let active = state
                 .sessions
                 .get_mut(window_key)
                 .ok_or_else(|| AppError::runtime("no session available"))?;
             let session_id = active.snapshot.session_id.clone();
-            let project_name = active.project.name.clone();
             let process = active
                 .processes
                 .get_mut(process_name)
@@ -333,7 +332,7 @@ impl ProcessOrchestrator {
             sync_snapshot_process(&mut active.snapshot, &process.snapshot);
             (
                 session_id,
-                project_name,
+                active.project.name.clone(),
                 active.loaded_config.base_dir.clone(),
                 env,
                 process.config.clone(),
@@ -495,7 +494,6 @@ impl ProcessOrchestrator {
             });
         });
 
-        let _ = project_name;
         Ok(())
     }
 
