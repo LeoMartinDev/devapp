@@ -1,3 +1,5 @@
+pub mod dependency;
+
 use std::{collections::HashMap, sync::Arc, thread, time::Duration};
 
 use chrono::Utc;
@@ -19,7 +21,7 @@ use crate::{
         readiness::wait_until_ready,
     },
     domain::{
-        config::{DependencyCondition, ProcessConfig, ProcessKind},
+        config::{ProcessConfig, ProcessKind},
         process::{LogStream, ProcessStatus},
         project::ProjectRecord,
         runtime::{
@@ -51,7 +53,7 @@ struct ActiveSession {
     logs: InMemoryLogStore,
 }
 
-struct ManagedProcess {
+pub(super) struct ManagedProcess {
     config: ProcessConfig,
     snapshot: ProcessSnapshot,
     child: Option<Arc<Mutex<Child>>>,
@@ -270,30 +272,7 @@ impl ProcessOrchestrator {
             let Some(active) = state.sessions.get(window_key) else {
                 return Ok(());
             };
-            if active.stop_requested {
-                return Ok(());
-            }
-            active
-                .processes
-                .iter()
-                .filter_map(|(name, process)| {
-                    if process.child.is_some()
-                        || !matches!(
-                            process.snapshot.status,
-                            ProcessStatus::Pending
-                                | ProcessStatus::Blocked
-                                | ProcessStatus::Stopped
-                        )
-                    {
-                        return None;
-                    }
-                    if dependencies_satisfied(&active.processes, &process.config) {
-                        Some(name.clone())
-                    } else {
-                        None
-                    }
-                })
-                .collect::<Vec<_>>()
+            dependency::runnable_names(&active.processes, active.stop_requested)
         };
 
         for process_name in runnable {
@@ -762,28 +741,6 @@ impl ProcessOrchestrator {
     }
 }
 
-fn dependencies_satisfied(
-    processes: &HashMap<String, ManagedProcess>,
-    config: &ProcessConfig,
-) -> bool {
-    config
-        .depends_on
-        .iter()
-        .all(|(dependency_name, condition)| {
-            let Some(dependency) = processes.get(dependency_name) else {
-                return false;
-            };
-            match condition {
-                DependencyCondition::Success => {
-                    matches!(dependency.snapshot.status, ProcessStatus::Succeeded)
-                }
-                DependencyCondition::Ready => {
-                    matches!(dependency.snapshot.status, ProcessStatus::Ready)
-                }
-            }
-        })
-}
-
 fn build_process_env(
     global_env: &IndexMap<String, String>,
     process_env: &IndexMap<String, String>,
@@ -869,7 +826,7 @@ mod tests {
 
     use super::*;
     use crate::domain::{
-        config::{DependencyCondition, ProcessKind},
+        config::ProcessKind,
         project::ProjectId,
     };
 
@@ -958,60 +915,6 @@ mod tests {
         let process_env = IndexMap::new();
         let merged = build_process_env(&global_env, &process_env);
         assert_eq!(merged.get("HOME"), Some(&"/custom".to_string()));
-    }
-
-    #[test]
-    fn dependencies_satisfied_requires_success_for_task_dependency() {
-        let mut processes = HashMap::new();
-        processes.insert(
-            "setup".to_string(),
-            managed_process("setup", ProcessKind::Task, ProcessStatus::Succeeded),
-        );
-        let mut depends_on = IndexMap::new();
-        depends_on.insert("setup".to_string(), DependencyCondition::Success);
-        let config = ProcessConfig {
-            kind: ProcessKind::Service,
-            cmd: "deno task dev".to_string(),
-            env: IndexMap::new(),
-            depends_on,
-            ready: None,
-        };
-
-        assert!(dependencies_satisfied(&processes, &config));
-
-        processes
-            .get_mut("setup")
-            .expect("setup process")
-            .snapshot
-            .status = ProcessStatus::Ready;
-        assert!(!dependencies_satisfied(&processes, &config));
-    }
-
-    #[test]
-    fn dependencies_satisfied_requires_ready_for_service_dependency() {
-        let mut processes = HashMap::new();
-        processes.insert(
-            "api".to_string(),
-            managed_process("api", ProcessKind::Service, ProcessStatus::Running),
-        );
-        let mut depends_on = IndexMap::new();
-        depends_on.insert("api".to_string(), DependencyCondition::Ready);
-        let config = ProcessConfig {
-            kind: ProcessKind::Service,
-            cmd: "deno task dev".to_string(),
-            env: IndexMap::new(),
-            depends_on,
-            ready: None,
-        };
-
-        assert!(!dependencies_satisfied(&processes, &config));
-
-        processes
-            .get_mut("api")
-            .expect("api process")
-            .snapshot
-            .status = ProcessStatus::Ready;
-        assert!(dependencies_satisfied(&processes, &config));
     }
 
     #[test]
