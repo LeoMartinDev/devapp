@@ -32,11 +32,10 @@ async function patchJson(path: string, version: string): Promise<void> {
 
 async function patchCargoVersion(path: string, version: string): Promise<void> {
   let text = await Deno.readTextFile(path);
-  // Only the [package] version line starts the line with `version =`.
-  // Dependency versions live inside `{ ... }` on lines that start with the dep name.
+  // Scope to the [package] table so dependency `version =` lines are never touched.
   text = text.replace(
-    /^version\s*=\s*"[^"]*"/m,
-    `version = "${version}"`,
+    /^(\[package\][\s\S]*?\nversion\s*=\s*")([^"]*)(")/m,
+    `$1${version}$3`,
   );
   await Deno.writeTextFile(path, text);
 }
