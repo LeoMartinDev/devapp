@@ -33,11 +33,16 @@ async function patchJson(path: string, version: string): Promise<void> {
 async function patchCargoVersion(path: string, version: string): Promise<void> {
   let text = await Deno.readTextFile(path);
   // Scope to the [package] table so dependency `version =` lines are never touched.
-  text = text.replace(
+  const updated = text.replace(
     /^(\[package\][\s\S]*?\nversion\s*=\s*")([^"]*)(")/m,
     `$1${version}$3`,
   );
-  await Deno.writeTextFile(path, text);
+  if (updated === text) {
+    throw new Error(
+      `ci_version: could not find [package] version to patch in ${path}`,
+    );
+  }
+  await Deno.writeTextFile(path, updated);
 }
 
 async function main(): Promise<void> {
