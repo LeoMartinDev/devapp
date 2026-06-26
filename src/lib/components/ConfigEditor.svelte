@@ -314,12 +314,6 @@ import { runtimeStore } from "$lib/stores/runtime.svelte";
     };
   });
 
-  function fieldModified(process: ProcessFormState, field: string): boolean {
-    if (!loadedProjectId || loadError) return false;
-    const original = processes.find((p) => p.id === process.id);
-    if (!original) return false;
-    return isDirty;
-  }
 </script>
 
 <Dialog
@@ -433,7 +427,16 @@ import { runtimeStore } from "$lib/stores/runtime.svelte";
           {/if}
       </div>
       <div class="flex gap-2">
-        <Button onclick={onClose} disabled={saving}>
+        <Button
+          onclick={() => {
+            if (isDirty && !loadError) {
+              dirtyClosePending = true;
+            } else {
+              onClose();
+            }
+          }}
+          disabled={saving}
+        >
           Cancel
         </Button>
         <Button variant="primary" onclick={save} disabled={!project || saving || loadError !== null}>
