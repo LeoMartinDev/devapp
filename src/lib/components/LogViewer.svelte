@@ -236,7 +236,27 @@
       {/if}
     </div>
 
-    <div class="flex shrink-0 items-center gap-0.5">
+    <div
+      class="flex shrink-0 items-center gap-0.5"
+      role="toolbar"
+      tabindex="0"
+      aria-label="Log actions"
+      onkeydown={(e: KeyboardEvent) => {
+        const target = e.currentTarget as HTMLElement | null;
+        if (!target) return;
+        if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+          e.preventDefault();
+          const buttons = Array.from(
+            target.querySelectorAll<HTMLElement>("button:not([disabled])"),
+          );
+          const idx = buttons.indexOf(document.activeElement as HTMLElement);
+          const next = e.key === "ArrowRight"
+            ? (idx + 1) % buttons.length
+            : (idx - 1 + buttons.length) % buttons.length;
+          buttons[next]?.focus();
+        }
+      }}
+    >
       <button
         type="button"
         class={`grid h-8 w-8 place-items-center rounded-md text-text-subtle transition-colors hover:bg-surface-hover hover:text-text ${

@@ -108,7 +108,7 @@
         </button>
 
         <div
-          class="flex shrink-0 items-center gap-0.5 transition md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100"
+          class="flex shrink-0 items-center gap-0.5 transition opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
         >
           {#if action}
             {@const danger = action === "stop"}
@@ -197,7 +197,7 @@
         </button>
 
         <div
-          class="flex shrink-0 items-center gap-0.5 transition md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100"
+          class="flex shrink-0 items-center gap-0.5 transition opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
         >
           <button
             type="button"
