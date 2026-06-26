@@ -18,10 +18,6 @@ jobs:
         with:
           deno-version: v2.x
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
       - run: deno install
 
       - run: deno task check
@@ -64,9 +60,6 @@ jobs:
         with:
           deno-version: v2.x
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
       - run: deno install
 
       - uses: dtolnay/rust-toolchain@stable
