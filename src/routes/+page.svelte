@@ -198,10 +198,20 @@
           onCloseTerminal={() => {}}
         />
 
-        {#if runtimeStore.terminals.filter(t => t.isOpen).length > 0}
-          <div class="mb-2 mt-4 flex items-center px-1">
-            <h2 class="text-[11px] font-semibold uppercase tracking-wider text-text-subtle">Terminals</h2>
-          </div>
+        <div class="mb-2 mt-4 flex items-center justify-between px-1">
+          <h2 class="text-[11px] font-semibold uppercase tracking-wider text-text-subtle">Terminals</h2>
+          {#if runtimeStore.projectId}
+            <button
+              type="button"
+              class="grid h-5 w-5 place-items-center rounded text-text-subtle transition-colors hover:bg-surface-hover hover:text-text"
+              aria-label="Open terminal"
+              title="Open terminal (Ctrl+T)"
+              onclick={() => { void openTerminal(); }}
+            ><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+          {/if}
+        </div>
+        {#if runtimeStore.terminals.some(t => t.isOpen)}
           <ProcessList
             processes={[]}
             terminals={runtimeStore.terminals}
@@ -218,6 +228,17 @@
               runtimeStore.closeSelectedTerminal();
             }}
           />
+        {:else}
+          <div class="rounded-lg border border-dashed border-border px-3 py-4 text-center">
+            <div class="text-xs text-text-subtle">No terminal open</div>
+            <button
+              type="button"
+              class="mt-2 rounded-md border border-border bg-surface-raised px-3 py-1 text-xs text-text transition-colors hover:bg-surface-hover"
+              onclick={() => { void openTerminal(); }}
+              disabled={!runtimeStore.projectId}
+            >Open terminal</button>
+            <div class="mt-1 text-[10px] text-text-subtle">or press Ctrl+T</div>
+          </div>
         {/if}
       </section>
 {/snippet}
