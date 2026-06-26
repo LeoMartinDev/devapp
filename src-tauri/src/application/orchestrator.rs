@@ -355,6 +355,10 @@ impl ProcessOrchestrator {
                 .sessions
                 .get_mut(window_key)
                 .ok_or_else(|| AppError::runtime("no session available"))?;
+            if active.stop_requested {
+                let _ = child.lock().await.kill().await;
+                return Ok(());
+            }
             let process = active
                 .processes
                 .get_mut(process_name)
