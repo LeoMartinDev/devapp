@@ -176,17 +176,21 @@ pub async fn load_project_config(
     state: State<'_, AppState>,
     request: LoadProjectConfigRequest,
 ) -> Result<ProjectConfigDocument, String> {
-    let store = state.project_store.lock().await;
-    let project = store
-        .get(&request.project_id)
-        .map_err(to_error_string)?
-        .ok_or_else(|| AppError::project_store("project not found").to_string())?;
+    let (project, yaml) = {
+        let store = state.project_store.lock().await;
+        let project = store
+            .get(&request.project_id)
+            .map_err(to_error_string)?
+            .ok_or_else(|| AppError::project_store("project not found").to_string())?;
 
-    let yaml = match request.yaml {
-        Some(yaml) => yaml,
-        None => store
-            .load_project_config_raw(&project)
-            .map_err(to_error_string)?,
+        let yaml = match request.yaml {
+            Some(yaml) => yaml,
+            None => store
+                .load_project_config_raw(&project)
+                .map_err(to_error_string)?,
+        };
+
+        (project, yaml)
     };
 
     let loaded = parse_config_document(&project.config_path, &yaml).map_err(to_error_string)?;
@@ -202,19 +206,23 @@ pub async fn save_project_config(
     state: State<'_, AppState>,
     request: SaveProjectConfigRequest,
 ) -> Result<ProjectConfigDocument, String> {
-    let store = state.project_store.lock().await;
-    let project = store
-        .get(&request.project_id)
-        .map_err(to_error_string)?
-        .ok_or_else(|| AppError::project_store("project not found").to_string())?;
+    let (project, yaml) = {
+        let store = state.project_store.lock().await;
+        let project = store
+            .get(&request.project_id)
+            .map_err(to_error_string)?
+            .ok_or_else(|| AppError::project_store("project not found").to_string())?;
+        (project, request.yaml)
+    };
     let loaded =
-        parse_config_document(&project.config_path, &request.yaml).map_err(to_error_string)?;
+        parse_config_document(&project.config_path, &yaml).map_err(to_error_string)?;
+    let store = state.project_store.lock().await;
     store
-        .save_project_config_raw(&project, &request.yaml)
+        .save_project_config_raw(&project, &yaml)
         .map_err(to_error_string)?;
     Ok(ProjectConfigDocument {
         project,
-        yaml: request.yaml,
+        yaml,
         config: loaded.config,
     })
 }
@@ -266,6 +274,7 @@ pub async fn stop_project(
     state
         .terminal_manager
         .close_all_for_window(app_handle, &key)
+        .await
         .map_err(to_error_string)?;
     Ok(snapshot)
 }
@@ -350,6 +359,7 @@ pub async fn open_terminal(
             request.cols.unwrap_or(100),
             request.rows.unwrap_or(28),
         )
+        .await
         .map_err(to_error_string)
 }
 
@@ -361,6 +371,7 @@ pub async fn write_terminal(
     state
         .terminal_manager
         .write_terminal(&request.terminal_id, &request.data)
+        .await
         .map_err(to_error_string)
 }
 
@@ -372,6 +383,7 @@ pub async fn resize_terminal(
     state
         .terminal_manager
         .resize_terminal(&request.terminal_id, request.cols, request.rows)
+        .await
         .map_err(to_error_string)
 }
 
@@ -384,6 +396,7 @@ pub async fn close_terminal(
     state
         .terminal_manager
         .close_terminal(app_handle, &request.terminal_id)
+        .await
         .map_err(to_error_string)
 }
 

@@ -158,7 +158,7 @@ impl ProcessOrchestrator {
                 .ok_or_else(|| AppError::runtime_with_code("no session available", crate::error::ErrorCode::ProcessNotFound))?;
             let process = active
                 .processes
-                .get_mut(process_name)
+                .get_mut(&*process_name)
                 .ok_or_else(|| AppError::runtime_with_code(format!("unknown process `{process_name}`"), crate::error::ErrorCode::ProcessNotFound))?;
             if matches!(process.config.kind, ProcessKind::Task) {
                 return Err(AppError::runtime_with_code("cannot stop a task process", crate::error::ErrorCode::ProcessCannotRestart));
@@ -196,7 +196,7 @@ impl ProcessOrchestrator {
             .ok_or_else(|| AppError::runtime_with_code("no session available", crate::error::ErrorCode::ProcessNotFound))?;
         let process = active
             .processes
-            .get_mut(process_name)
+            .get_mut(&*process_name)
             .ok_or_else(|| AppError::runtime_with_code(format!("unknown process `{process_name}`"), crate::error::ErrorCode::ProcessNotFound))?;
         lifecycle::reset_managed_process(process);
         ActiveSession::sync_snapshot_process(&mut active.snapshot, &process.snapshot);
@@ -239,7 +239,7 @@ impl ProcessOrchestrator {
             let session_id = active.snapshot.session_id.clone();
             let process = active
                 .processes
-                .get_mut(process_name)
+                .get_mut(&*process_name)
                 .ok_or_else(|| AppError::runtime_with_code(format!("unknown process `{process_name}`"), crate::error::ErrorCode::ProcessNotFound))?;
             if process.child.is_some() {
                 return Ok(());
@@ -281,7 +281,7 @@ impl ProcessOrchestrator {
             }
             let process = active
                 .processes
-                .get_mut(process_name)
+                .get_mut(&*process_name)
                 .ok_or_else(|| AppError::runtime_with_code(format!("unknown process `{process_name}`"), crate::error::ErrorCode::ProcessNotFound))?;
             process.child = Some(child.clone());
             process.pid = child_pid;
@@ -462,7 +462,7 @@ impl ProcessOrchestrator {
                 .ok_or_else(|| AppError::runtime_with_code("no session available", crate::error::ErrorCode::ProcessNotFound))?;
             let process = active
                 .processes
-                .get_mut(process_name)
+                .get_mut(&*process_name)
                 .ok_or_else(|| AppError::runtime_with_code(format!("unknown process `{process_name}`"), crate::error::ErrorCode::ProcessNotFound))?;
             if process.terminating {
                 return Ok(());
@@ -493,7 +493,7 @@ impl ProcessOrchestrator {
                 .ok_or_else(|| AppError::runtime_with_code("no session available", crate::error::ErrorCode::ProcessNotFound))?;
             let process = active
                 .processes
-                .get_mut(process_name)
+                .get_mut(&*process_name)
                 .ok_or_else(|| AppError::runtime_with_code(format!("unknown process `{process_name}`"), crate::error::ErrorCode::ProcessNotFound))?;
 
             if process.generation != generation {
@@ -562,7 +562,7 @@ impl ProcessOrchestrator {
                 .ok_or_else(|| AppError::runtime_with_code("no session available", crate::error::ErrorCode::ProcessNotFound))?;
             let process = active
                 .processes
-                .get_mut(process_name)
+                .get_mut(&*process_name)
                 .ok_or_else(|| AppError::runtime_with_code(format!("unknown process `{process_name}`"), crate::error::ErrorCode::ProcessNotFound))?;
 
             if process.generation != generation {
