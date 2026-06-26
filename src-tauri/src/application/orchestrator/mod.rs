@@ -1,12 +1,13 @@
 pub mod dependency;
+pub mod lifecycle;
+pub mod log;
+pub mod session;
 
-use std::{collections::HashMap, sync::Arc, thread, time::Duration};
+use std::{future::Future, pin::Pin, sync::Arc, thread, time::Duration};
 
 use chrono::Utc;
-use indexmap::IndexMap;
 use tauri::{AppHandle, Emitter};
 use tokio::{
-    io::{AsyncBufReadExt, BufReader},
     process::Child,
     sync::{broadcast, mpsc, oneshot, Mutex},
 };
@@ -15,8 +16,7 @@ use crate::{
     application::{
         command_runner::spawn_process,
         events::{
-            ProcessLogEvent, RuntimeEvent, SessionStatusEvent, PROCESS_LOG_EVENT,
-            RUNTIME_ERROR_EVENT, SESSION_SNAPSHOT_EVENT,
+            RuntimeEvent, SessionStatusEvent, RUNTIME_ERROR_EVENT, SESSION_SNAPSHOT_EVENT,
         },
         readiness::wait_until_ready,
     },
@@ -25,32 +25,21 @@ use crate::{
         process::{LogStream, ProcessStatus},
         project::ProjectRecord,
         runtime::{
-            ProcessLogPayload, ProcessRuntimeId, ProcessSnapshot, RunSessionId, RunSessionSnapshot,
+            ProcessLogPayload, ProcessSnapshot, RunSessionSnapshot,
         },
     },
     error::AppError,
     infrastructure::{
         config_loader::LoadedProjectConfig,
-        log_store::{InMemoryLogStore, LogStore},
+        log_store::LogStore,
     },
 };
+
+use session::{ActiveSession, OrchestratorState};
 
 #[derive(Clone)]
 pub struct ProcessOrchestrator {
     inner: Arc<Mutex<OrchestratorState>>,
-}
-
-struct OrchestratorState {
-    sessions: HashMap<String, ActiveSession>,
-}
-
-struct ActiveSession {
-    snapshot: RunSessionSnapshot,
-    project: ProjectRecord,
-    loaded_config: LoadedProjectConfig,
-    processes: HashMap<String, ManagedProcess>,
-    stop_requested: bool,
-    logs: InMemoryLogStore,
 }
 
 pub(super) struct ManagedProcess {
@@ -68,9 +57,7 @@ pub(super) struct ManagedProcess {
 impl ProcessOrchestrator {
     pub fn new() -> Self {
         Self {
-            inner: Arc::new(Mutex::new(OrchestratorState {
-                sessions: HashMap::new(),
-            })),
+            inner: Arc::new(Mutex::new(OrchestratorState::new())),
         }
     }
 
@@ -91,58 +78,9 @@ impl ProcessOrchestrator {
                 }
             }
 
-            let session_id = RunSessionId::new();
-            let started_at = Utc::now();
-            let mut session_snapshot = RunSessionSnapshot {
-                session_id: session_id.clone(),
-                project_id: project.id.clone(),
-                project_name: project.name.clone(),
-                base_dir: project.base_dir.clone(),
-                started_at,
-                stopped_at: None,
-                processes: Vec::new(),
-            };
-
-            let mut processes = HashMap::new();
-            for (name, config) in &loaded_config.config.processes {
-                let (log_tx, _) = broadcast::channel(4096);
-                let snapshot = ProcessSnapshot {
-                    runtime_id: ProcessRuntimeId::new(),
-                    name: name.clone(),
-                    kind: config.kind.clone(),
-                    status: ProcessStatus::Pending,
-                    started_at: None,
-                    exited_at: None,
-                    exit_code: None,
-                };
-                session_snapshot.processes.push(snapshot.clone());
-                processes.insert(
-                    name.clone(),
-                    ManagedProcess {
-                        config: config.clone(),
-                        snapshot,
-                        child: None,
-                        pid: None,
-                        kill_tx: None,
-                        log_tx,
-                        terminating: false,
-                        generation: 0,
-                        stop_notify_tx: None,
-                    },
-                );
-            }
-
-            state.sessions.insert(
-                window_key.clone(),
-                ActiveSession {
-                    snapshot: session_snapshot.clone(),
-                    project,
-                    loaded_config,
-                    processes,
-                    stop_requested: false,
-                    logs: InMemoryLogStore::default(),
-                },
-            );
+            let session = ActiveSession::new(project, loaded_config);
+            let session_snapshot = session.snapshot.clone();
+            state.sessions.insert(window_key.clone(), session);
 
             session_snapshot
         };
@@ -224,8 +162,8 @@ impl ProcessOrchestrator {
             }
             let (notify_tx, notify_rx) = oneshot::channel();
             process.stop_notify_tx = Some(notify_tx);
-            let kill_tx = begin_process_termination(process);
-            sync_snapshot_process(&mut active.snapshot, &process.snapshot);
+            let kill_tx = lifecycle::begin_process_termination(process);
+            ActiveSession::sync_snapshot_process(&mut active.snapshot, &process.snapshot);
             (kill_tx, notify_rx)
         };
 
@@ -257,8 +195,8 @@ impl ProcessOrchestrator {
             .processes
             .get_mut(process_name)
             .ok_or_else(|| AppError::runtime(format!("unknown process `{process_name}`")))?;
-        reset_managed_process(process);
-        sync_snapshot_process(&mut active.snapshot, &process.snapshot);
+        lifecycle::reset_managed_process(process);
+        ActiveSession::sync_snapshot_process(&mut active.snapshot, &process.snapshot);
         Ok(())
     }
 
@@ -303,12 +241,12 @@ impl ProcessOrchestrator {
             if process.child.is_some() {
                 return Ok(());
             }
-            let env = build_process_env(&active.loaded_config.config.env, &process.config.env);
+            let env = lifecycle::build_process_env(&active.loaded_config.config.env, &process.config.env);
             process.snapshot.status = ProcessStatus::Starting;
             process.snapshot.started_at = Some(Utc::now());
             process.snapshot.exited_at = None;
             process.snapshot.exit_code = None;
-            sync_snapshot_process(&mut active.snapshot, &process.snapshot);
+            ActiveSession::sync_snapshot_process(&mut active.snapshot, &process.snapshot);
             (
                 session_id,
                 active.project.name.clone(),
@@ -345,13 +283,26 @@ impl ProcessOrchestrator {
             process.pid = child_pid;
             process.kill_tx = Some(kill_tx);
             process.snapshot.status = ProcessStatus::Running;
-            sync_snapshot_process(&mut active.snapshot, &process.snapshot);
+            ActiveSession::sync_snapshot_process(&mut active.snapshot, &process.snapshot);
             process.generation
         };
 
         self.emit_snapshot(&app_handle, window_key).await?;
 
-        self.spawn_log_task(
+        let orchestrator = self.clone();
+        let wk = window_key.to_string();
+        let append_fn = move |payload: ProcessLogPayload| -> Pin<Box<dyn Future<Output = ()> + Send>> {
+            let inner = orchestrator.inner.clone();
+            let wk = wk.clone();
+            Box::pin(async move {
+                let mut state = inner.lock().await;
+                if let Some(active) = state.sessions.get_mut(&wk) {
+                    active.logs.append(payload);
+                }
+            })
+        };
+
+        log::spawn_log_task(
             app_handle.clone(),
             window_key.to_string(),
             session_id.clone(),
@@ -360,8 +311,23 @@ impl ProcessOrchestrator {
             LogStream::Stdout,
             spawned.stdout,
             log_tx.clone(),
+            append_fn,
         );
-        self.spawn_log_task(
+
+        let orchestrator = self.clone();
+        let wk = window_key.to_string();
+        let append_fn = move |payload: ProcessLogPayload| -> Pin<Box<dyn Future<Output = ()> + Send>> {
+            let inner = orchestrator.inner.clone();
+            let wk = wk.clone();
+            Box::pin(async move {
+                let mut state = inner.lock().await;
+                if let Some(active) = state.sessions.get_mut(&wk) {
+                    active.logs.append(payload);
+                }
+            })
+        };
+
+        log::spawn_log_task(
             app_handle.clone(),
             window_key.to_string(),
             session_id.clone(),
@@ -370,6 +336,7 @@ impl ProcessOrchestrator {
             LogStream::Stderr,
             spawned.stderr,
             log_tx.clone(),
+            append_fn,
         );
 
         if matches!(config.kind, ProcessKind::Service) {
@@ -476,53 +443,6 @@ impl ProcessOrchestrator {
         Ok(())
     }
 
-    fn spawn_log_task<R>(
-        &self,
-        app_handle: AppHandle,
-        window_key: String,
-        session_id: RunSessionId,
-        process_name: String,
-        runtime_id: ProcessRuntimeId,
-        stream: LogStream,
-        reader: R,
-        log_tx: broadcast::Sender<String>,
-    ) where
-        R: tokio::io::AsyncRead + Unpin + Send + 'static,
-    {
-        let orchestrator = self.clone();
-        tokio::spawn(async move {
-            let mut lines = BufReader::new(reader).lines();
-            while let Ok(Some(line)) = lines.next_line().await {
-                let _ = log_tx.send(line.clone());
-                let payload = ProcessLogPayload {
-                    session_id: session_id.clone(),
-                    runtime_id: runtime_id.clone(),
-                    process_name: process_name.clone(),
-                    stream,
-                    line,
-                    timestamp: Utc::now(),
-                };
-                let _ = orchestrator.append_log(&window_key, payload.clone()).await;
-                let _ =
-                    app_handle.emit_to(&window_key, PROCESS_LOG_EVENT, ProcessLogEvent { payload });
-            }
-        });
-    }
-
-    async fn append_log(
-        &self,
-        window_key: &str,
-        payload: ProcessLogPayload,
-    ) -> Result<(), AppError> {
-        let mut state = self.inner.lock().await;
-        let active = state
-            .sessions
-            .get_mut(window_key)
-            .ok_or_else(|| AppError::runtime("no session available"))?;
-        active.logs.append(payload);
-        Ok(())
-    }
-
     async fn mark_process_ready(
         &self,
         app_handle: AppHandle,
@@ -543,7 +463,7 @@ impl ProcessOrchestrator {
                 return Ok(());
             }
             process.snapshot.status = ProcessStatus::Ready;
-            sync_snapshot_process(&mut active.snapshot, &process.snapshot);
+            ActiveSession::sync_snapshot_process(&mut active.snapshot, &process.snapshot);
         }
         self.emit_snapshot(&app_handle, window_key).await?;
         self.spawn_runnable_processes(app_handle, window_key)
@@ -588,7 +508,7 @@ impl ProcessOrchestrator {
             } else {
                 process.snapshot.status = ProcessStatus::Failed;
             }
-            sync_snapshot_process(&mut active.snapshot, &process.snapshot);
+            ActiveSession::sync_snapshot_process(&mut active.snapshot, &process.snapshot);
             (process.config.kind.clone(), terminating, notify_tx)
         };
 
@@ -652,7 +572,7 @@ impl ProcessOrchestrator {
             process.snapshot.exited_at = Some(Utc::now());
             process.snapshot.exit_code = exit_code;
             process.child = None;
-            sync_snapshot_process(&mut active.snapshot, &process.snapshot);
+            ActiveSession::sync_snapshot_process(&mut active.snapshot, &process.snapshot);
             (terminating, notify_tx)
         };
 
@@ -688,7 +608,7 @@ impl ProcessOrchestrator {
             active.snapshot.stopped_at = Some(stopped_at);
             let mut kill_txs = Vec::new();
             for process in active.processes.values_mut() {
-                if let Some(kill_tx) = begin_process_termination(process) {
+                if let Some(kill_tx) = lifecycle::begin_process_termination(process) {
                     kill_txs.push(kill_tx);
                 } else if explicit_stop
                     && matches!(
@@ -698,7 +618,7 @@ impl ProcessOrchestrator {
                 {
                     process.snapshot.status = ProcessStatus::Stopped;
                 }
-                sync_snapshot_process(&mut active.snapshot, &process.snapshot);
+                ActiveSession::sync_snapshot_process(&mut active.snapshot, &process.snapshot);
             }
             kill_txs
         };
@@ -741,181 +661,17 @@ impl ProcessOrchestrator {
     }
 }
 
-fn build_process_env(
-    global_env: &IndexMap<String, String>,
-    process_env: &IndexMap<String, String>,
-) -> HashMap<String, String> {
-    let mut env: HashMap<String, String> = std::env::vars().collect();
-    for (key, value) in global_env {
-        env.insert(key.clone(), value.clone());
-    }
-    for (key, value) in process_env {
-        env.insert(key.clone(), value.clone());
-    }
-    env
-}
-
-fn sync_snapshot_process(
-    session_snapshot: &mut RunSessionSnapshot,
-    process_snapshot: &ProcessSnapshot,
-) {
-    if let Some(existing) = session_snapshot
-        .processes
-        .iter_mut()
-        .find(|process| process.runtime_id == process_snapshot.runtime_id)
-    {
-        *existing = process_snapshot.clone();
-    }
-}
-
-/// Resets a managed process to a clean `Pending` state so it can be re-spawned.
-/// Extracted from `reset_process` to make the state transition unit-testable.
-fn reset_managed_process(process: &mut ManagedProcess) {
-    process.child = None;
-    process.pid = None;
-    process.kill_tx = None;
-    process.stop_notify_tx = None;
-    process.terminating = false;
-    process.generation += 1;
-    process.snapshot.status = ProcessStatus::Pending;
-    process.snapshot.started_at = None;
-    process.snapshot.exited_at = None;
-    process.snapshot.exit_code = None;
-}
-
-/// Marks a managed process for termination and returns its kill signal
-/// sender if the child is still alive. Extracted from `stop_process` /
-/// `finish_session` to make the state transition unit-testable.
-///
-/// The deadlock that prompted this helper: the background wait task holds
-/// the child mutex for the child's whole lifetime (because `Child::wait`
-/// borrows `&mut Child`), so the kill path MUST NOT lock that mutex to call
-/// `Child::kill`. Instead it takes `kill_tx` here and the wait task performs
-/// the kill inside the lock it already holds, signaled via the channel.
-///
-/// On Unix the process group is killed synchronously here (the pid is stored
-/// separately from the child mutex so no deadlock is possible). This ensures
-/// the process exits before `stop_process` returns its snapshot, eliminating
-/// the "stuck at Stopping" race.
-fn begin_process_termination(process: &mut ManagedProcess) -> Option<mpsc::Sender<()>> {
-    process.terminating = true;
-
-    #[cfg(unix)]
-    if let Some(pid) = process.pid {
-        unsafe {
-            libc::kill(pid as i32, libc::SIGKILL);
-        }
-    }
-
-    if matches!(
-        process.snapshot.status,
-        ProcessStatus::Starting | ProcessStatus::Running | ProcessStatus::Ready
-    ) {
-        process.snapshot.status = ProcessStatus::Stopping;
-        process.kill_tx.take()
-    } else {
-        None
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use chrono::Utc;
-    use indexmap::IndexMap;
-    use tokio::sync::broadcast;
 
     use super::*;
     use crate::domain::{
         config::ProcessKind,
+        process::ProcessStatus,
         project::ProjectId,
+        runtime::{ProcessRuntimeId, ProcessSnapshot, RunSessionId, RunSessionSnapshot},
     };
-
-    fn managed_process(name: &str, kind: ProcessKind, status: ProcessStatus) -> ManagedProcess {
-        let (log_tx, _) = broadcast::channel(4);
-        ManagedProcess {
-            config: ProcessConfig {
-                kind: kind.clone(),
-                cmd: format!("run {name}"),
-                env: IndexMap::new(),
-                depends_on: IndexMap::new(),
-                ready: None,
-            },
-            snapshot: ProcessSnapshot {
-                runtime_id: ProcessRuntimeId::new(),
-                name: name.to_string(),
-                kind,
-                status,
-                started_at: None,
-                exited_at: None,
-                exit_code: None,
-            },
-            child: None,
-            pid: None,
-            kill_tx: None,
-            log_tx,
-            terminating: false,
-            generation: 0,
-            stop_notify_tx: None,
-        }
-    }
-
-    #[test]
-    fn build_process_env_merges_global_with_process_override() {
-        let mut global_env = IndexMap::new();
-        global_env.insert("NODE_ENV".to_string(), "development".to_string());
-        global_env.insert("LOG_LEVEL".to_string(), "info".to_string());
-        let mut process_env = IndexMap::new();
-        process_env.insert("LOG_LEVEL".to_string(), "debug".to_string());
-        process_env.insert("PORT".to_string(), "3000".to_string());
-
-        let merged = build_process_env(&global_env, &process_env);
-
-        assert_eq!(merged.get("NODE_ENV"), Some(&"development".to_string()));
-        assert_eq!(merged.get("LOG_LEVEL"), Some(&"debug".to_string()));
-        assert_eq!(merged.get("PORT"), Some(&"3000".to_string()));
-    }
-
-    #[test]
-    fn build_process_env_empty_global_returns_only_process_env() {
-        let global_env = IndexMap::new();
-        let mut process_env = IndexMap::new();
-        process_env.insert("PORT".to_string(), "3000".to_string());
-
-        let merged = build_process_env(&global_env, &process_env);
-
-        assert_eq!(merged.get("PORT"), Some(&"3000".to_string()));
-    }
-
-    #[test]
-    fn build_process_env_empty_process_env_returns_only_global() {
-        let mut global_env = IndexMap::new();
-        global_env.insert("CI".to_string(), "true".to_string());
-        let process_env = IndexMap::new();
-
-        let merged = build_process_env(&global_env, &process_env);
-
-        assert_eq!(merged.get("CI"), Some(&"true".to_string()));
-    }
-
-    #[test]
-    fn build_process_env_inherits_system_environment() {
-        let global_env = IndexMap::new();
-        let process_env = IndexMap::new();
-        let merged = build_process_env(&global_env, &process_env);
-        assert!(
-            merged.contains_key("PATH") || merged.contains_key("Path"),
-            "merged env must inherit system PATH"
-        );
-    }
-
-    #[test]
-    fn build_process_env_process_override_wins_over_system() {
-        let mut global_env = IndexMap::new();
-        global_env.insert("HOME".to_string(), "/custom".to_string());
-        let process_env = IndexMap::new();
-        let merged = build_process_env(&global_env, &process_env);
-        assert_eq!(merged.get("HOME"), Some(&"/custom".to_string()));
-    }
 
     #[test]
     fn sync_snapshot_process_replaces_matching_runtime_snapshot() {
@@ -947,90 +703,9 @@ mod tests {
             exit_code: None,
         };
 
-        sync_snapshot_process(&mut session_snapshot, &updated);
+        ActiveSession::sync_snapshot_process(&mut session_snapshot, &updated);
 
         assert_eq!(session_snapshot.processes.len(), 1);
         assert_eq!(session_snapshot.processes[0], updated);
-    }
-
-    #[test]
-    fn reset_managed_process_restores_pending_state() {
-        let mut process = managed_process("api", ProcessKind::Service, ProcessStatus::Failed);
-        process.terminating = true;
-        process.snapshot.exit_code = Some(1);
-        process.snapshot.exited_at = Some(Utc::now());
-
-        reset_managed_process(&mut process);
-
-        assert_eq!(process.snapshot.status, ProcessStatus::Pending);
-        assert!(!process.terminating);
-        assert!(process.child.is_none());
-        assert_eq!(process.snapshot.exit_code, None);
-        assert_eq!(process.snapshot.exited_at, None);
-        assert_eq!(process.snapshot.started_at, None);
-    }
-
-    fn managed_process_with_kill_tx(
-        name: &str,
-        kind: ProcessKind,
-        status: ProcessStatus,
-    ) -> (ManagedProcess, mpsc::Receiver<()>) {
-        let mut process = managed_process(name, kind.clone(), status);
-        let (kill_tx, kill_rx) = mpsc::channel::<()>(1);
-        process.kill_tx = Some(kill_tx);
-        (process, kill_rx)
-    }
-
-    #[tokio::test]
-    async fn begin_process_termination_transitions_running_to_stopping() {
-        for status in [ProcessStatus::Starting, ProcessStatus::Running, ProcessStatus::Ready] {
-            let (mut process, mut kill_rx) =
-                managed_process_with_kill_tx("api", ProcessKind::Service, status);
-
-            let kill_tx = begin_process_termination(&mut process);
-
-            assert_eq!(process.snapshot.status, ProcessStatus::Stopping);
-            assert!(process.terminating, "terminating flag should be set for {status:?}");
-            let kill_tx = kill_tx.expect("kill signal should be returned for {status:?}");
-            assert!(
-                process.kill_tx.is_none(),
-                "kill_tx must be taken (not cloned) so the channel drains"
-            );
-            // Mirrors `stop_process`: send, then drop. The wait task must
-            // observe the signal.
-            kill_tx.send(()).await.expect("kill signal should send");
-            drop(kill_tx);
-            assert_eq!(kill_rx.recv().await, Some(()));
-        }
-    }
-
-    #[test]
-    fn begin_process_termination_leaves_terminal_states_untouched() {
-        // A process that already exited (Stopped/Failed/Succeeded) must not
-        // produce a kill signal, otherwise stop would hang waiting on a child
-        // that no longer exists.
-        for status in [
-            ProcessStatus::Pending,
-            ProcessStatus::Blocked,
-            ProcessStatus::Stopping,
-            ProcessStatus::Stopped,
-            ProcessStatus::Failed,
-            ProcessStatus::Succeeded,
-        ] {
-            let (mut process, _kill_rx) =
-                managed_process_with_kill_tx("api", ProcessKind::Service, status);
-
-            let kill_tx = begin_process_termination(&mut process);
-
-            assert!(
-                kill_tx.is_none(),
-                "no kill signal expected for terminal/pending state {status:?}"
-            );
-            assert_eq!(
-                process.snapshot.status,
-                status,
-                "status must be unchanged for {status:?}"
-            );
-        }
     }
 }
