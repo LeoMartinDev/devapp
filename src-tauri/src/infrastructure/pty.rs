@@ -242,7 +242,7 @@ impl TerminalManager {
                 .collect::<Vec<_>>()
         };
         for terminal_id in ids {
-            let _ = self.close_terminal(app_handle.clone(), &terminal_id)?;
+            let _ = self.close_terminal(app_handle.clone(), &terminal_id);
         }
         Ok(())
     }
