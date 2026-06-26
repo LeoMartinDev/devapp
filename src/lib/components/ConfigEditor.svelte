@@ -18,6 +18,7 @@
   import ProcessForm from "$lib/components/ProcessForm.svelte";
   import ReadyCheckEditor from "$lib/components/ReadyCheckEditor.svelte";
   import Button from "$lib/components/ui/Button.svelte";
+  import ConfirmDialog from "$lib/components/ui/ConfirmDialog.svelte";
   import Dialog from "$lib/components/ui/Dialog.svelte";
 import { runtimeStore } from "$lib/stores/runtime.svelte";
   import type { ProjectRecord } from "$lib/types";
@@ -47,6 +48,7 @@ import { runtimeStore } from "$lib/stores/runtime.svelte";
   let suppressDirty = $state(false);
   let touchedFields = $state(new Set<string>());
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+  let dirtyClosePending = $state(false);
 
   const selectedProcess = $derived(
     processes.find((process) => process.id === selectedProcessId) ?? processes[0] ?? null,
@@ -311,6 +313,13 @@ import { runtimeStore } from "$lib/stores/runtime.svelte";
       }
     };
   });
+
+  function fieldModified(process: ProcessFormState, field: string): boolean {
+    if (!loadedProjectId || loadError) return false;
+    const original = processes.find((p) => p.id === process.id);
+    if (!original) return false;
+    return isDirty;
+  }
 </script>
 
 <Dialog
@@ -318,7 +327,13 @@ import { runtimeStore } from "$lib/stores/runtime.svelte";
   title="Runtime configuration"
   description={dialogDescription}
   size="xl"
-  {onClose}
+  onClose={() => {
+    if (isDirty && !loadError) {
+      dirtyClosePending = true;
+    } else {
+      onClose();
+    }
+  }}
   closeOnOverlay={!saving}
 >
   <div class="grid h-[min(760px,calc(100vh-160px))] min-h-0 grid-cols-1 grid-rows-[auto_minmax(0,1fr)] overflow-hidden lg:grid-cols-[260px_minmax(0,1fr)] lg:grid-rows-none">
@@ -413,9 +428,9 @@ import { runtimeStore } from "$lib/stores/runtime.svelte";
         {:else}
           {status ?? "Changes are saved to the project YAML."}
         {/if}
-        {#if isDirty}
-          <span class="text-warning"> Unsaved changes</span>
-        {/if}
+          {#if isDirty}
+            <span class="ml-2 inline-flex items-center rounded border border-warning/30 bg-warning/10 px-1.5 py-0.5 text-[10px] font-medium text-warning">Modified</span>
+          {/if}
       </div>
       <div class="flex gap-2">
         <Button onclick={onClose} disabled={saving}>
@@ -427,4 +442,19 @@ import { runtimeStore } from "$lib/stores/runtime.svelte";
       </div>
     </div>
   {/snippet}
+
+  <ConfirmDialog
+    open={dirtyClosePending}
+    title="Unsaved changes"
+    message="You have unsaved changes. Discard them?"
+    confirmLabel="Discard"
+    cancelLabel="Keep editing"
+    onConfirm={() => {
+      dirtyClosePending = false;
+      onClose();
+    }}
+    onClose={() => {
+      dirtyClosePending = false;
+    }}
+  />
 </Dialog>
