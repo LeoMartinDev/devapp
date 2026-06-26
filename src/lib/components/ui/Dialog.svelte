@@ -116,14 +116,14 @@
   <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
     <button
       type="button"
-      class="absolute inset-0 bg-black/60 backdrop-blur-sm"
+      class="dialog-backdrop absolute inset-0 bg-black/60 backdrop-blur-sm"
       aria-label="Close dialog"
       tabindex="-1"
       onclick={() => closeOnOverlay && onClose()}
     ></button>
     <div
       bind:this={panel}
-      class={`relative z-10 flex max-h-[calc(100vh-44px)] min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-surface text-text shadow-2xl outline-none ${sizeClass[size]}`}
+      class={`dialog-panel relative z-10 flex max-h-[calc(100vh-44px)] min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-surface text-text shadow-2xl outline-none ${sizeClass[size]}`}
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
@@ -134,7 +134,24 @@
         <h2 id={titleId} class="text-sm font-semibold">{title}</h2>
         {#if description}
           <p id={descriptionId} class="mt-1 text-xs leading-5 text-text-subtle">{description}</p>
-        {/if}
+{/if}
+
+<style>
+  .dialog-backdrop {
+    animation: dialog-fade-in 150ms ease-out;
+  }
+  .dialog-panel {
+    animation: dialog-scale-in 150ms ease-out;
+  }
+  @keyframes dialog-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes dialog-scale-in {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+</style>
       </header>
 
       <div class="min-h-0 flex-1 overflow-hidden">

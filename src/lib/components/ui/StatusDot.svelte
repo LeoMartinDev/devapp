@@ -23,13 +23,15 @@
   };
 </script>
 
-<span
-  class={`relative inline-flex h-2 w-2 shrink-0 items-center justify-center ${className}`}
->
-  {#if styleByStatus[status].glow}
-    <span
-      class={`absolute inline-flex h-2 w-2 animate-ping rounded-full opacity-40 ${styleByStatus[status].dot}`}
-    ></span>
-  {/if}
-  <span class={`relative inline-flex h-2 w-2 rounded-full ${styleByStatus[status].dot}`}></span>
-</span>
+{#key status}
+  <span
+    class={`relative inline-flex h-2 w-2 shrink-0 items-center justify-center ${className}`}
+  >
+    {#if styleByStatus[status].glow}
+      <span
+        class={`absolute inline-flex h-2 w-2 animate-ping rounded-full opacity-40 ${styleByStatus[status].dot}`}
+      ></span>
+    {/if}
+    <span class={`relative inline-flex h-2 w-2 rounded-full transition-colors duration-300 ${styleByStatus[status].dot}`}></span>
+  </span>
+{/key}
