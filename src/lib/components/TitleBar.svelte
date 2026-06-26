@@ -124,7 +124,6 @@
     user-select: none;
     -webkit-user-select: none;
     gap: 8px;
-    overflow: hidden;
   }
 
   .titlebar-left {
