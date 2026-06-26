@@ -1,5 +1,5 @@
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashSet,
     fs,
     path::{Path, PathBuf},
 };
@@ -236,19 +236,6 @@ fn canonicalize_for_write_target(path: &Path) -> Result<PathBuf, AppError> {
 
 pub fn serialize_config(config: &DevappConfig) -> Result<String, AppError> {
     serde_yaml::to_string(config).map_err(|error| AppError::config(error.to_string()))
-}
-
-pub fn process_dependency_statuses(config: &DevappConfig) -> HashMap<String, Vec<String>> {
-    config
-        .processes
-        .iter()
-        .map(|(name, process)| {
-            (
-                name.clone(),
-                process.depends_on.keys().cloned().collect::<Vec<_>>(),
-            )
-        })
-        .collect()
 }
 
 #[cfg(test)]

@@ -18,6 +18,7 @@ pub fn run() {
         .with_target(false)
         .init();
 
+    // intentionally fatal — the app cannot run without app state
     let app_state = AppState::new().expect("failed to initialize app state");
     tauri::Builder::default()
         .manage(app_state)
@@ -75,6 +76,7 @@ pub fn run() {
             tauri_api::commands::open_project_window,
             tauri_api::commands::get_git_info
         ])
+        // intentionally fatal — the app cannot recover from a Tauri runtime failure
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
