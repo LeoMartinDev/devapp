@@ -232,11 +232,11 @@
             <div class="text-xs text-text-subtle">No terminal open</div>
             <button
               type="button"
-              class="mt-2 rounded-md border border-border bg-surface-raised px-3 py-1 text-xs text-text transition-colors hover:bg-surface-hover"
+              class="mt-2 text-xs text-text-muted underline-offset-2 transition-colors hover:text-text hover:underline"
               onclick={() => { void openTerminal(); }}
               disabled={!runtimeStore.projectId}
             >Open terminal</button>
-            <div class="mt-1 text-[10px] text-text-subtle">or press Ctrl+T</div>
+            <span class="text-[10px] text-text-subtle"> or Ctrl+T</span>
           </div>
         {/if}
       </section>
