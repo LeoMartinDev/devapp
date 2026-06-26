@@ -5,7 +5,10 @@ use tokio::{
     process::{Child, ChildStderr, ChildStdout},
 };
 
-use crate::{error::AppError, infrastructure::shell::command_for_shell};
+use crate::{
+    error::{AppError, ErrorCode},
+    infrastructure::shell::command_for_shell,
+};
 
 pub struct SpawnedProcess {
     pub child: Child,
@@ -27,16 +30,16 @@ pub fn spawn_process(
 
     let mut child = command
         .spawn()
-        .map_err(|error| AppError::runtime(format!("failed to spawn `{cmd}`: {error}")))?;
+        .map_err(|error| AppError::runtime_with_code(format!("failed to spawn `{cmd}`: {error}"), ErrorCode::ProcessStartFailed))?;
 
     let stdout = child
         .stdout
         .take()
-        .ok_or_else(|| AppError::runtime("missing child stdout pipe"))?;
+        .ok_or_else(|| AppError::runtime_with_code("missing child stdout pipe", ErrorCode::ProcessStartFailed))?;
     let stderr = child
         .stderr
         .take()
-        .ok_or_else(|| AppError::runtime("missing child stderr pipe"))?;
+        .ok_or_else(|| AppError::runtime_with_code("missing child stderr pipe", ErrorCode::ProcessStartFailed))?;
 
     Ok(SpawnedProcess {
         child,

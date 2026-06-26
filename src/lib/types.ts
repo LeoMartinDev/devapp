@@ -158,3 +158,21 @@ export interface GitInfo {
   isWorktree: boolean;
   displayPath: string | null;
 }
+
+export type ErrorCode =
+  | "configNotFound"
+  | "configParseFailed"
+  | "configValidationFailed"
+  | "configUnsupportedVersion"
+  | "configDependencyCycle"
+  | "configUnknownProcess"
+  | "projectNotFound"
+  | "projectAlreadyRunning"
+  | "launchLocked"
+  | "processNotFound"
+  | "processStartFailed"
+  | "processCannotRestart"
+  | "readinessTimeout"
+  | "readinessCheckFailed"
+  | "ioError"
+  | "terminalError";

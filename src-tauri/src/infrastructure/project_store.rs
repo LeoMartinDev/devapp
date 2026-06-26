@@ -387,7 +387,7 @@ fn yaml_with_base_dir_reference(raw_yaml: &str, base_dir: &Path) -> Result<Strin
     let mut value: serde_yaml::Value = serde_yaml::from_str(raw_yaml)?;
     let mapping = value
         .as_mapping_mut()
-        .ok_or_else(|| AppError::validation("configuration root must be a YAML mapping"))?;
+        .ok_or_else(|| AppError::validation_with_code("configuration root must be a YAML mapping", crate::error::ErrorCode::ConfigValidationFailed))?;
     mapping.insert(
         serde_yaml::Value::String("baseDir".to_string()),
         serde_yaml::Value::String(base_dir.display().to_string()),

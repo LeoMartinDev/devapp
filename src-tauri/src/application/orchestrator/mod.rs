@@ -11,6 +11,7 @@ use tokio::{
     process::Child,
     sync::{broadcast, mpsc, oneshot, Mutex},
 };
+use tracing::{error, info, warn};
 
 use crate::{
     application::{
@@ -68,12 +69,14 @@ impl ProcessOrchestrator {
         project: ProjectRecord,
         loaded_config: LoadedProjectConfig,
     ) -> Result<RunSessionSnapshot, AppError> {
+        info!(project = %project.name, "starting session");
         let snapshot = {
             let mut state = self.inner.lock().await;
             if let Some(active) = state.sessions.get(&window_key) {
                 if active.snapshot.stopped_at.is_none() {
-                    return Err(AppError::runtime(
+                    return Err(AppError::runtime_with_code(
                         "a project session is already running in this window",
+                        crate::error::ErrorCode::ProjectAlreadyRunning,
                     ));
                 }
             }
@@ -112,13 +115,13 @@ impl ProcessOrchestrator {
             let active = state
                 .sessions
                 .get(window_key)
-                .ok_or_else(|| AppError::runtime("no session available"))?;
+                .ok_or_else(|| AppError::runtime_with_code("no session available", crate::error::ErrorCode::ProcessNotFound))?;
             let process = active
                 .processes
                 .get(process_name)
-                .ok_or_else(|| AppError::runtime(format!("unknown process `{process_name}`")))?;
+                .ok_or_else(|| AppError::runtime_with_code(format!("unknown process `{process_name}`"), crate::error::ErrorCode::ProcessNotFound))?;
             if matches!(process.config.kind, ProcessKind::Task) {
-                return Err(AppError::runtime("cannot restart a task process"));
+                return Err(AppError::runtime_with_code("cannot restart a task process", crate::error::ErrorCode::ProcessCannotRestart));
             }
         }
         self.stop_process(app_handle.clone(), window_key, process_name)
@@ -152,13 +155,13 @@ impl ProcessOrchestrator {
             let active = state
                 .sessions
                 .get_mut(window_key)
-                .ok_or_else(|| AppError::runtime("no session available"))?;
+                .ok_or_else(|| AppError::runtime_with_code("no session available", crate::error::ErrorCode::ProcessNotFound))?;
             let process = active
                 .processes
                 .get_mut(process_name)
-                .ok_or_else(|| AppError::runtime(format!("unknown process `{process_name}`")))?;
+                .ok_or_else(|| AppError::runtime_with_code(format!("unknown process `{process_name}`"), crate::error::ErrorCode::ProcessNotFound))?;
             if matches!(process.config.kind, ProcessKind::Task) {
-                return Err(AppError::runtime("cannot stop a task process"));
+                return Err(AppError::runtime_with_code("cannot stop a task process", crate::error::ErrorCode::ProcessCannotRestart));
             }
             let (notify_tx, notify_rx) = oneshot::channel();
             process.stop_notify_tx = Some(notify_tx);
@@ -190,11 +193,11 @@ impl ProcessOrchestrator {
         let active = state
             .sessions
             .get_mut(window_key)
-            .ok_or_else(|| AppError::runtime("no session available"))?;
+            .ok_or_else(|| AppError::runtime_with_code("no session available", crate::error::ErrorCode::ProcessNotFound))?;
         let process = active
             .processes
             .get_mut(process_name)
-            .ok_or_else(|| AppError::runtime(format!("unknown process `{process_name}`")))?;
+            .ok_or_else(|| AppError::runtime_with_code(format!("unknown process `{process_name}`"), crate::error::ErrorCode::ProcessNotFound))?;
         lifecycle::reset_managed_process(process);
         ActiveSession::sync_snapshot_process(&mut active.snapshot, &process.snapshot);
         Ok(())
@@ -232,12 +235,12 @@ impl ProcessOrchestrator {
             let active = state
                 .sessions
                 .get_mut(window_key)
-                .ok_or_else(|| AppError::runtime("no session available"))?;
+                .ok_or_else(|| AppError::runtime_with_code("no session available", crate::error::ErrorCode::ProcessNotFound))?;
             let session_id = active.snapshot.session_id.clone();
             let process = active
                 .processes
                 .get_mut(process_name)
-                .ok_or_else(|| AppError::runtime(format!("unknown process `{process_name}`")))?;
+                .ok_or_else(|| AppError::runtime_with_code(format!("unknown process `{process_name}`"), crate::error::ErrorCode::ProcessNotFound))?;
             if process.child.is_some() {
                 return Ok(());
             }
@@ -262,6 +265,7 @@ impl ProcessOrchestrator {
 
         let spawned = spawn_process(&config.cmd, &base_dir, &env)?;
         let child_pid = spawned.child.id();
+        info!(process = %process_name, pid = ?child_pid, "process started");
         let child = Arc::new(Mutex::new(spawned.child));
         let (kill_tx, mut kill_rx) = mpsc::channel::<()>(1);
 
@@ -270,7 +274,7 @@ impl ProcessOrchestrator {
             let active = state
                 .sessions
                 .get_mut(window_key)
-                .ok_or_else(|| AppError::runtime("no session available"))?;
+                .ok_or_else(|| AppError::runtime_with_code("no session available", crate::error::ErrorCode::ProcessNotFound))?;
             if active.stop_requested {
                 let _ = child.lock().await.kill().await;
                 return Ok(());
@@ -278,7 +282,7 @@ impl ProcessOrchestrator {
             let process = active
                 .processes
                 .get_mut(process_name)
-                .ok_or_else(|| AppError::runtime(format!("unknown process `{process_name}`")))?;
+                .ok_or_else(|| AppError::runtime_with_code(format!("unknown process `{process_name}`"), crate::error::ErrorCode::ProcessNotFound))?;
             process.child = Some(child.clone());
             process.pid = child_pid;
             process.kill_tx = Some(kill_tx);
@@ -367,11 +371,12 @@ impl ProcessOrchestrator {
                                     .await;
                             }
                             Err(error) => {
+                                warn!(process = %process_name_for_ready, "readiness timeout for {}", process_name_for_ready);
                                 let _ = readiness_app_handle.emit_to(
                                     &readiness_window_key,
                                     RUNTIME_ERROR_EVENT,
                                     RuntimeEvent::RuntimeError {
-                                        message: error.to_string(),
+                                        message: format!("process `{process_name_for_ready}` readiness failed: {error}"),
                                     },
                                 );
                                 let _ = orchestrator
@@ -454,11 +459,11 @@ impl ProcessOrchestrator {
             let active = state
                 .sessions
                 .get_mut(window_key)
-                .ok_or_else(|| AppError::runtime("no session available"))?;
+                .ok_or_else(|| AppError::runtime_with_code("no session available", crate::error::ErrorCode::ProcessNotFound))?;
             let process = active
                 .processes
                 .get_mut(process_name)
-                .ok_or_else(|| AppError::runtime(format!("unknown process `{process_name}`")))?;
+                .ok_or_else(|| AppError::runtime_with_code(format!("unknown process `{process_name}`"), crate::error::ErrorCode::ProcessNotFound))?;
             if process.terminating {
                 return Ok(());
             }
@@ -485,11 +490,11 @@ impl ProcessOrchestrator {
             let active = state
                 .sessions
                 .get_mut(window_key)
-                .ok_or_else(|| AppError::runtime("no session available"))?;
+                .ok_or_else(|| AppError::runtime_with_code("no session available", crate::error::ErrorCode::ProcessNotFound))?;
             let process = active
                 .processes
                 .get_mut(process_name)
-                .ok_or_else(|| AppError::runtime(format!("unknown process `{process_name}`")))?;
+                .ok_or_else(|| AppError::runtime_with_code(format!("unknown process `{process_name}`"), crate::error::ErrorCode::ProcessNotFound))?;
 
             if process.generation != generation {
                 return Ok(());
@@ -511,6 +516,7 @@ impl ProcessOrchestrator {
             ActiveSession::sync_snapshot_process(&mut active.snapshot, &process.snapshot);
             (process.config.kind.clone(), terminating, notify_tx)
         };
+        info!(process = %process_name, exit_code = ?exit_code, "process exited");
 
         if let Some(tx) = notify_tx {
             let _ = tx.send(());
@@ -547,16 +553,17 @@ impl ProcessOrchestrator {
         message: String,
         generation: u64,
     ) -> Result<(), AppError> {
+        error!(process = %process_name, error = %message, "process failed");
         let (terminating, notify_tx) = {
             let mut state = self.inner.lock().await;
             let active = state
                 .sessions
                 .get_mut(window_key)
-                .ok_or_else(|| AppError::runtime("no session available"))?;
+                .ok_or_else(|| AppError::runtime_with_code("no session available", crate::error::ErrorCode::ProcessNotFound))?;
             let process = active
                 .processes
                 .get_mut(process_name)
-                .ok_or_else(|| AppError::runtime(format!("unknown process `{process_name}`")))?;
+                .ok_or_else(|| AppError::runtime_with_code(format!("unknown process `{process_name}`"), crate::error::ErrorCode::ProcessNotFound))?;
 
             if process.generation != generation {
                 return Ok(());
@@ -598,6 +605,7 @@ impl ProcessOrchestrator {
         failure_message: Option<String>,
         explicit_stop: bool,
     ) -> Result<Option<RunSessionSnapshot>, AppError> {
+        info!("session stopped");
         let kill_txs = {
             let mut state = self.inner.lock().await;
             let Some(active) = state.sessions.get_mut(window_key) else {
@@ -638,7 +646,7 @@ impl ProcessOrchestrator {
                     RUNTIME_ERROR_EVENT,
                     RuntimeEvent::RuntimeError { message },
                 )
-                .map_err(|error| AppError::runtime(error.to_string()))?;
+                .map_err(|error| AppError::runtime_with_code(error.to_string(), crate::error::ErrorCode::ProcessStartFailed))?;
         }
 
         self.emit_snapshot(&app_handle, window_key).await?;
@@ -657,7 +665,7 @@ impl ProcessOrchestrator {
                 SESSION_SNAPSHOT_EVENT,
                 SessionStatusEvent { snapshot },
             )
-            .map_err(|error| AppError::runtime(error.to_string()))
+            .map_err(|error| AppError::runtime_with_code(error.to_string(), crate::error::ErrorCode::ProcessStartFailed))
     }
 }
 

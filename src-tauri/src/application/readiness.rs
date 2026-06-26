@@ -7,7 +7,7 @@ use tokio::{
 
 use crate::{
     domain::config::{CommandReadyConfig, ReadyConfig},
-    error::AppError,
+    error::{AppError, ErrorCode},
     infrastructure::{
         ready_checks::{DEFAULT_READY_INTERVAL_MS, DEFAULT_READY_TIMEOUT_MS},
         shell::command_for_shell,
@@ -32,10 +32,10 @@ pub async fn wait_until_ready(
                 Duration::from_millis(config.interval_ms.unwrap_or(DEFAULT_READY_INTERVAL_MS));
             loop {
                 if Instant::now() > deadline {
-                    return Err(AppError::runtime(format!(
-                        "http readiness timed out for {}",
-                        config.url
-                    )));
+                    return Err(AppError::runtime_with_code(
+                        format!("http readiness timed out for {}", config.url),
+                        crate::error::ErrorCode::ReadinessTimeout,
+                    ));
                 }
                 if let Ok(response) = reqwest::get(&config.url).await {
                     let status = response.status();
@@ -51,7 +51,10 @@ pub async fn wait_until_ready(
                 Duration::from_millis(config.timeout_ms.unwrap_or(DEFAULT_READY_TIMEOUT_MS));
             let deadline = Instant::now() + timeout;
             let mut receiver = log_rx.ok_or_else(|| {
-                AppError::runtime("log readiness requires an active log subscription")
+                AppError::runtime_with_code(
+                    "log readiness requires an active log subscription",
+                    ErrorCode::ReadinessCheckFailed,
+                )
             })?;
             let matcher = if config.regex {
                 Some(regex::Regex::new(&config.pattern).map_err(|error| {
@@ -67,20 +70,26 @@ pub async fn wait_until_ready(
             loop {
                 let remaining = deadline.saturating_duration_since(Instant::now());
                 if remaining.is_zero() {
-                    return Err(AppError::runtime(format!(
-                        "log readiness timed out waiting for `{}`",
-                        config.pattern
-                    )));
+                    return Err(AppError::runtime_with_code(
+                        format!(
+                            "log readiness timed out waiting for `{}`",
+                            config.pattern
+                        ),
+                        ErrorCode::ReadinessTimeout,
+                    ));
                 }
                 let line = tokio::time::timeout(remaining, receiver.recv())
                     .await
                     .map_err(|_| {
-                        AppError::runtime(format!(
-                            "log readiness timed out waiting for `{}`",
-                            config.pattern
-                        ))
+                        AppError::runtime_with_code(
+                            format!(
+                                "log readiness timed out waiting for `{}`",
+                                config.pattern
+                            ),
+                            ErrorCode::ReadinessTimeout,
+                        )
                     })?
-                    .map_err(|error| AppError::runtime(error.to_string()))?;
+                    .map_err(|error| AppError::runtime_with_code(error.to_string(), ErrorCode::ReadinessCheckFailed))?;
                 if let Some(regex) = &matcher {
                     if regex.is_match(&line) {
                         return Ok(());
@@ -105,17 +114,20 @@ async fn wait_until_command_ready(
 
     loop {
         if Instant::now() > deadline {
-            return Err(AppError::runtime(format!(
-                "command readiness timed out for `{}`",
-                config.cmd
-            )));
+            return Err(AppError::runtime_with_code(
+                format!("command readiness timed out for `{}`", config.cmd),
+                ErrorCode::ReadinessTimeout,
+            ));
         }
 
         let mut command = command_for_shell(&config.cmd);
         command.current_dir(base_dir);
         command.envs(env.iter());
         let status = command.status().await.map_err(|error| {
-            AppError::runtime(format!("failed to run readiness command: {error}"))
+            AppError::runtime_with_code(
+                format!("failed to run readiness command: {error}"),
+                ErrorCode::ReadinessCheckFailed,
+            )
         })?;
         if status.success() {
             return Ok(());
