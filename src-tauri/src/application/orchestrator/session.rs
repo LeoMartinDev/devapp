@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use chrono::Utc;
 use tokio::sync::broadcast;
@@ -30,7 +30,7 @@ impl OrchestratorState {
 }
 
 pub(super) struct ActiveSession {
-    pub(super) snapshot: RunSessionSnapshot,
+    pub(super) snapshot: Arc<RunSessionSnapshot>,
     pub(super) project: ProjectRecord,
     pub(super) loaded_config: LoadedProjectConfig,
     pub(super) processes: HashMap<String, ManagedProcess>,
@@ -82,7 +82,7 @@ impl ActiveSession {
         }
 
         Self {
-            snapshot,
+            snapshot: Arc::new(snapshot),
             project,
             loaded_config,
             processes,
@@ -103,4 +103,5 @@ impl ActiveSession {
             *existing = process_snapshot.clone();
         }
     }
+
 }

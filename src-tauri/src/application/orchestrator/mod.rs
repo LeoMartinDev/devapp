@@ -82,7 +82,7 @@ impl ProcessOrchestrator {
             }
 
             let session = ActiveSession::new(project, loaded_config);
-            let session_snapshot = session.snapshot.clone();
+            let session_snapshot = (*session.snapshot).clone();
             state.sessions.insert(window_key.clone(), session);
 
             session_snapshot
@@ -166,7 +166,7 @@ impl ProcessOrchestrator {
             let (notify_tx, notify_rx) = oneshot::channel();
             process.stop_notify_tx = Some(notify_tx);
             let kill_tx = lifecycle::begin_process_termination(process);
-            ActiveSession::sync_snapshot_process(&mut active.snapshot, &process.snapshot);
+            ActiveSession::sync_snapshot_process(Arc::make_mut(&mut active.snapshot), &process.snapshot);
             (kill_tx, notify_rx)
         };
 
@@ -185,7 +185,7 @@ impl ProcessOrchestrator {
         Ok(state
             .sessions
             .get(window_key)
-            .map(|active| active.snapshot.clone()))
+            .map(|active| (*active.snapshot).clone()))
     }
 
     async fn reset_process(&self, window_key: &str, process_name: &str) -> Result<(), AppError> {
@@ -199,7 +199,7 @@ impl ProcessOrchestrator {
             .get_mut(&*process_name)
             .ok_or_else(|| AppError::runtime_with_code(format!("unknown process `{process_name}`"), crate::error::ErrorCode::ProcessNotFound))?;
         lifecycle::reset_managed_process(process);
-        ActiveSession::sync_snapshot_process(&mut active.snapshot, &process.snapshot);
+        ActiveSession::sync_snapshot_process(Arc::make_mut(&mut active.snapshot), &process.snapshot);
         Ok(())
     }
 
@@ -249,7 +249,7 @@ impl ProcessOrchestrator {
             process.snapshot.started_at = Some(Utc::now());
             process.snapshot.exited_at = None;
             process.snapshot.exit_code = None;
-            ActiveSession::sync_snapshot_process(&mut active.snapshot, &process.snapshot);
+            ActiveSession::sync_snapshot_process(Arc::make_mut(&mut active.snapshot), &process.snapshot);
             (
                 session_id,
                 active.project.name.clone(),
@@ -287,7 +287,7 @@ impl ProcessOrchestrator {
             process.pid = child_pid;
             process.kill_tx = Some(kill_tx);
             process.snapshot.status = ProcessStatus::Running;
-            ActiveSession::sync_snapshot_process(&mut active.snapshot, &process.snapshot);
+            ActiveSession::sync_snapshot_process(Arc::make_mut(&mut active.snapshot), &process.snapshot);
             process.generation
         };
 
@@ -468,7 +468,7 @@ impl ProcessOrchestrator {
                 return Ok(());
             }
             process.snapshot.status = ProcessStatus::Ready;
-            ActiveSession::sync_snapshot_process(&mut active.snapshot, &process.snapshot);
+            ActiveSession::sync_snapshot_process(Arc::make_mut(&mut active.snapshot), &process.snapshot);
         }
         self.emit_snapshot(&app_handle, window_key).await?;
         self.spawn_runnable_processes(app_handle, window_key)
@@ -513,7 +513,7 @@ impl ProcessOrchestrator {
             } else {
                 process.snapshot.status = ProcessStatus::Failed;
             }
-            ActiveSession::sync_snapshot_process(&mut active.snapshot, &process.snapshot);
+            ActiveSession::sync_snapshot_process(Arc::make_mut(&mut active.snapshot), &process.snapshot);
             (process.config.kind.clone(), terminating, notify_tx)
         };
         info!(process = %process_name, exit_code = ?exit_code, "process exited");
@@ -579,7 +579,7 @@ impl ProcessOrchestrator {
             process.snapshot.exited_at = Some(Utc::now());
             process.snapshot.exit_code = exit_code;
             process.child = None;
-            ActiveSession::sync_snapshot_process(&mut active.snapshot, &process.snapshot);
+            ActiveSession::sync_snapshot_process(Arc::make_mut(&mut active.snapshot), &process.snapshot);
             (terminating, notify_tx)
         };
 
@@ -613,7 +613,7 @@ impl ProcessOrchestrator {
             };
             active.stop_requested = true;
             let stopped_at = Utc::now();
-            active.snapshot.stopped_at = Some(stopped_at);
+            Arc::make_mut(&mut active.snapshot).stopped_at = Some(stopped_at);
             let mut kill_txs = Vec::new();
             for process in active.processes.values_mut() {
                 if let Some(kill_tx) = lifecycle::begin_process_termination(process) {
@@ -626,7 +626,7 @@ impl ProcessOrchestrator {
                 {
                     process.snapshot.status = ProcessStatus::Stopped;
                 }
-                ActiveSession::sync_snapshot_process(&mut active.snapshot, &process.snapshot);
+                ActiveSession::sync_snapshot_process(Arc::make_mut(&mut active.snapshot), &process.snapshot);
             }
             kill_txs
         };
