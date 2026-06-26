@@ -164,6 +164,12 @@
     system: "text-accent",
   };
 
+  const borderByStream: Record<string, string> = {
+    stdout: "border-l-[#e7e9ee30]",
+    stderr: "border-l-danger",
+    system: "border-l-[#5b8def]",
+  };
+
   function escapeRegExp(s: string): string {
     return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }
@@ -319,13 +325,16 @@
         {#each visibleItems as entry, index (`${entry.timestamp}-${startIndex + index}`)}
           <div
             style="position: absolute; top: {(startIndex + index) * ROW_HEIGHT}px; left: 0; right: 0; height: {ROW_HEIGHT}px;"
-            class="group flex items-center gap-3 rounded px-3 hover:bg-surface-hover/40"
+            class="group flex items-center gap-3 rounded px-3 hover:bg-surface-hover/40 border-l-[3px] {borderByStream[entry.stream] ?? 'border-l-transparent'}"
           >
             <span class="shrink-0 select-none text-text-subtle">
               {new Date(entry.timestamp).toLocaleTimeString()}
             </span>
             <span class="w-12 shrink-0 select-none uppercase text-text-subtle">{entry.stream}</span>
             <span class={`truncate ${toneByStream[entry.stream] ?? "text-text"}`}>
+              {#if entry.stream === "system" && /ready|listening/i.test(entry.line)}
+                <span class="mr-1">&#9679;</span>
+              {/if}
               {#each highlightLine(entry.line, query) as seg}
                 {#if seg.match}
                   <mark class="bg-warning/30 text-text rounded-[2px]">{seg.text}</mark>
