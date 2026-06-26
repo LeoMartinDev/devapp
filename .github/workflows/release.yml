@@ -14,15 +14,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
 
-      - run: npm install
-
-      - uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
+      - run: deno task install
 
       - run: deno task check
       - run: deno task build
@@ -32,6 +32,10 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
+      - name: Install Tauri Linux system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
       - run: cargo test
         working-directory: src-tauri
 
@@ -63,7 +67,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - run: npm install
+      - run: deno task install
 
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
