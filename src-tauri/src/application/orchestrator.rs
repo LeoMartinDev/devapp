@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc, thread};
+use std::{collections::HashMap, sync::Arc, thread, time::Duration};
 
 use chrono::Utc;
 use indexmap::IndexMap;
@@ -6,7 +6,7 @@ use tauri::{AppHandle, Emitter};
 use tokio::{
     io::{AsyncBufReadExt, BufReader},
     process::Child,
-    sync::{broadcast, mpsc, Mutex},
+    sync::{broadcast, mpsc, oneshot, Mutex},
 };
 
 use crate::{
@@ -55,18 +55,12 @@ struct ManagedProcess {
     config: ProcessConfig,
     snapshot: ProcessSnapshot,
     child: Option<Arc<Mutex<Child>>>,
-    /// OS process id of the immediate child. Stored so that stop/termination
-    /// can signal the process group without locking the child mutex (which is
-    /// held by the background wait task for the child's whole lifetime).
     pid: Option<u32>,
-    /// One-shot kill signal consumed by the process's background wait task.
-    /// Routing kills through this channel (rather than locking the child
-    /// mutex to call `Child::kill`) is what lets `stop_process` and
-    /// `finish_session` terminate a running service without deadlocking the
-    /// wait task, which holds that mutex for the child's whole lifetime.
     kill_tx: Option<mpsc::Sender<()>>,
     log_tx: broadcast::Sender<String>,
     terminating: bool,
+    generation: u64,
+    stop_notify_tx: Option<oneshot::Sender<()>>,
 }
 
 impl ProcessOrchestrator {
@@ -130,6 +124,8 @@ impl ProcessOrchestrator {
                         kill_tx: None,
                         log_tx,
                         terminating: false,
+                        generation: 0,
+                        stop_notify_tx: None,
                     },
                 );
             }
@@ -211,7 +207,7 @@ impl ProcessOrchestrator {
         window_key: &str,
         process_name: &str,
     ) -> Result<Option<RunSessionSnapshot>, AppError> {
-        let kill_tx = {
+        let (kill_tx, done_rx) = {
             let mut state = self.inner.lock().await;
             let active = state
                 .sessions
@@ -224,17 +220,18 @@ impl ProcessOrchestrator {
             if matches!(process.config.kind, ProcessKind::Task) {
                 return Err(AppError::runtime("cannot stop a task process"));
             }
+            let (notify_tx, notify_rx) = oneshot::channel();
+            process.stop_notify_tx = Some(notify_tx);
             let kill_tx = begin_process_termination(process);
             sync_snapshot_process(&mut active.snapshot, &process.snapshot);
-            kill_tx
+            (kill_tx, notify_rx)
         };
 
-        // Signal the background wait task to kill the child. We must NOT lock
-        // the child mutex here: the wait task holds it for the child's whole
-        // lifetime, so contending it would deadlock.
         if let Some(kill_tx) = kill_tx {
             let _ = kill_tx.send(()).await;
         }
+
+        let _ = tokio::time::timeout(Duration::from_secs(10), done_rx).await;
 
         self.emit_snapshot(&app_handle, window_key).await?;
         Ok(self.snapshot(window_key).await?)
@@ -352,7 +349,7 @@ impl ProcessOrchestrator {
         let child = Arc::new(Mutex::new(spawned.child));
         let (kill_tx, mut kill_rx) = mpsc::channel::<()>(1);
 
-        {
+        let generation = {
             let mut state = self.inner.lock().await;
             let active = state
                 .sessions
@@ -367,7 +364,8 @@ impl ProcessOrchestrator {
             process.kill_tx = Some(kill_tx);
             process.snapshot.status = ProcessStatus::Running;
             sync_snapshot_process(&mut active.snapshot, &process.snapshot);
-        }
+            process.generation
+        };
 
         self.emit_snapshot(&app_handle, window_key).await?;
 
@@ -434,6 +432,7 @@ impl ProcessOrchestrator {
                                         &process_name_for_ready,
                                         None,
                                         error.to_string(),
+                                        generation,
                                     )
                                     .await;
                             }
@@ -452,15 +451,6 @@ impl ProcessOrchestrator {
         let exit_window_key = window_key.to_string();
         thread::spawn(move || {
             tauri::async_runtime::block_on(async move {
-                // The stop/kill paths signal through `kill_rx` rather than
-                // acquiring the child mutex. `tokio::process::Child::wait`
-                // borrows `&mut Child` for its whole lifetime, so while this
-                // task waits it MUST hold the child lock. If `stop_process`
-                // tried to take that same lock to call `kill()`, the two
-                // would deadlock for any long-running service and the process
-                // would be stuck in `Stopping` forever. Listening for the
-                // kill signal here lets us kill the child from within the
-                // lock we already hold.
                 let exit_status = {
                     let mut child = child.lock().await;
                     tokio::select! {
@@ -481,6 +471,7 @@ impl ProcessOrchestrator {
                                 &process_name_for_wait,
                                 code,
                                 status.success(),
+                                generation,
                             )
                             .await;
                     }
@@ -492,6 +483,7 @@ impl ProcessOrchestrator {
                                 &process_name_for_wait,
                                 None,
                                 error.to_string(),
+                                generation,
                             )
                             .await;
                     }
@@ -585,8 +577,9 @@ impl ProcessOrchestrator {
         process_name: &str,
         exit_code: Option<i32>,
         success: bool,
+        generation: u64,
     ) -> Result<(), AppError> {
-        let (kind, terminating) = {
+        let (kind, terminating, notify_tx) = {
             let mut state = self.inner.lock().await;
             let active = state
                 .sessions
@@ -596,6 +589,12 @@ impl ProcessOrchestrator {
                 .processes
                 .get_mut(process_name)
                 .ok_or_else(|| AppError::runtime(format!("unknown process `{process_name}`")))?;
+
+            if process.generation != generation {
+                return Ok(());
+            }
+
+            let notify_tx = process.stop_notify_tx.take();
             process.child = None;
             process.snapshot.exited_at = Some(Utc::now());
             process.snapshot.exit_code = exit_code;
@@ -609,8 +608,12 @@ impl ProcessOrchestrator {
                 process.snapshot.status = ProcessStatus::Failed;
             }
             sync_snapshot_process(&mut active.snapshot, &process.snapshot);
-            (process.config.kind.clone(), terminating)
+            (process.config.kind.clone(), terminating, notify_tx)
         };
+
+        if let Some(tx) = notify_tx {
+            let _ = tx.send(());
+        }
 
         self.emit_snapshot(&app_handle, window_key).await?;
 
@@ -641,8 +644,9 @@ impl ProcessOrchestrator {
         process_name: &str,
         exit_code: Option<i32>,
         message: String,
+        generation: u64,
     ) -> Result<(), AppError> {
-        let terminating = {
+        let (terminating, notify_tx) = {
             let mut state = self.inner.lock().await;
             let active = state
                 .sessions
@@ -653,6 +657,11 @@ impl ProcessOrchestrator {
                 .get_mut(process_name)
                 .ok_or_else(|| AppError::runtime(format!("unknown process `{process_name}`")))?;
 
+            if process.generation != generation {
+                return Ok(());
+            }
+
+            let notify_tx = process.stop_notify_tx.take();
             let terminating = process.terminating || active.stop_requested;
             if terminating {
                 process.snapshot.status = ProcessStatus::Stopped;
@@ -663,8 +672,12 @@ impl ProcessOrchestrator {
             process.snapshot.exit_code = exit_code;
             process.child = None;
             sync_snapshot_process(&mut active.snapshot, &process.snapshot);
-            terminating
+            (terminating, notify_tx)
         };
+
+        if let Some(tx) = notify_tx {
+            let _ = tx.send(());
+        }
 
         self.emit_snapshot(&app_handle, window_key).await?;
 
@@ -773,10 +786,10 @@ fn build_process_env(
     global_env: &IndexMap<String, String>,
     process_env: &IndexMap<String, String>,
 ) -> HashMap<String, String> {
-    let mut env: HashMap<_, _> = global_env
-        .iter()
-        .map(|(k, v)| (k.clone(), v.clone()))
-        .collect();
+    let mut env: HashMap<String, String> = std::env::vars().collect();
+    for (key, value) in global_env {
+        env.insert(key.clone(), value.clone());
+    }
     for (key, value) in process_env {
         env.insert(key.clone(), value.clone());
     }
@@ -802,7 +815,9 @@ fn reset_managed_process(process: &mut ManagedProcess) {
     process.child = None;
     process.pid = None;
     process.kill_tx = None;
+    process.stop_notify_tx = None;
     process.terminating = false;
+    process.generation += 1;
     process.snapshot.status = ProcessStatus::Pending;
     process.snapshot.started_at = None;
     process.snapshot.exited_at = None;
@@ -829,7 +844,7 @@ fn begin_process_termination(process: &mut ManagedProcess) -> Option<mpsc::Sende
     #[cfg(unix)]
     if let Some(pid) = process.pid {
         unsafe {
-            libc::kill(-(pid as i32), libc::SIGKILL);
+            libc::kill(pid as i32, libc::SIGKILL);
         }
     }
 
@@ -880,6 +895,8 @@ mod tests {
             kill_tx: None,
             log_tx,
             terminating: false,
+            generation: 0,
+            stop_notify_tx: None,
         }
     }
 
@@ -907,7 +924,6 @@ mod tests {
 
         let merged = build_process_env(&global_env, &process_env);
 
-        assert_eq!(merged.len(), 1);
         assert_eq!(merged.get("PORT"), Some(&"3000".to_string()));
     }
 
@@ -919,8 +935,27 @@ mod tests {
 
         let merged = build_process_env(&global_env, &process_env);
 
-        assert_eq!(merged.len(), 1);
         assert_eq!(merged.get("CI"), Some(&"true".to_string()));
+    }
+
+    #[test]
+    fn build_process_env_inherits_system_environment() {
+        let global_env = IndexMap::new();
+        let process_env = IndexMap::new();
+        let merged = build_process_env(&global_env, &process_env);
+        assert!(
+            merged.contains_key("PATH") || merged.contains_key("Path"),
+            "merged env must inherit system PATH"
+        );
+    }
+
+    #[test]
+    fn build_process_env_process_override_wins_over_system() {
+        let mut global_env = IndexMap::new();
+        global_env.insert("HOME".to_string(), "/custom".to_string());
+        let process_env = IndexMap::new();
+        let merged = build_process_env(&global_env, &process_env);
+        assert_eq!(merged.get("HOME"), Some(&"/custom".to_string()));
     }
 
     #[test]
