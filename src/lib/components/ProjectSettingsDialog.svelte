@@ -98,14 +98,12 @@
   <div class="space-y-4 overflow-y-auto px-5 py-5">
     <TextField
       label="Name"
-      class="h-10"
       error={issueFor("project.name")}
       bind:value={name}
     />
 
     <TextField
       label="Base directory"
-      class="h-10"
       placeholder="/path/to/project"
       error={issueFor("project.baseDir")}
       bind:value={baseDir}
@@ -114,7 +112,6 @@
     <label class="block space-y-1.5 text-sm">
       <SelectField
         label="Configuration source"
-        class="h-10"
         options={configSourceOptions}
         error={issueFor("project.configSource")}
         bind:value={configSource}

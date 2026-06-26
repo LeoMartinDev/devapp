@@ -180,26 +180,45 @@
           <h2 class="text-[11px] font-semibold uppercase tracking-wider text-text-subtle">Processes</h2>
           {#if session}
             <span class="text-[11px] text-text-subtle">
-              since {new Date(session.startedAt).toLocaleTimeString()}
+              {session.processes.filter(p => p.status !== 'pending' && p.status !== 'stopped').length}/{session.processes.length}
             </span>
           {/if}
         </div>
         <ProcessList
           processes={session?.processes ?? []}
-          terminals={runtimeStore.terminals}
+          terminals={[]}
           selectedProcessRuntimeId={runtimeStore.selectedProcessRuntimeId}
-          selectedTerminalId={runtimeStore.selectedTerminalId}
+          selectedTerminalId={null}
           busy={runtimeStore.busy}
           onSelectProcess={(runtimeId) => runtimeStore.selectProcess(runtimeId)}
-          onSelectTerminal={(terminalId) => runtimeStore.selectTerminal(terminalId)}
+          onSelectTerminal={() => {}}
           onStart={(processName) => runtimeStore.startSessionProcess(processName)}
           onStop={(processName) => runtimeStore.stopSessionProcess(processName)}
           onRestart={(processName) => runtimeStore.restartSessionProcess(processName)}
-          onCloseTerminal={(terminalId) => {
-            runtimeStore.selectTerminal(terminalId);
-            runtimeStore.closeSelectedTerminal();
-          }}
+          onCloseTerminal={() => {}}
         />
+
+        {#if runtimeStore.terminals.filter(t => t.isOpen).length > 0}
+          <div class="mb-2 mt-4 flex items-center px-1">
+            <h2 class="text-[11px] font-semibold uppercase tracking-wider text-text-subtle">Terminals</h2>
+          </div>
+          <ProcessList
+            processes={[]}
+            terminals={runtimeStore.terminals}
+            selectedProcessRuntimeId={null}
+            selectedTerminalId={runtimeStore.selectedTerminalId}
+            busy={runtimeStore.busy}
+            onSelectProcess={() => {}}
+            onSelectTerminal={(terminalId) => runtimeStore.selectTerminal(terminalId)}
+            onStart={() => {}}
+            onStop={() => {}}
+            onRestart={() => {}}
+            onCloseTerminal={(terminalId) => {
+              runtimeStore.selectTerminal(terminalId);
+              runtimeStore.closeSelectedTerminal();
+            }}
+          />
+        {/if}
       </section>
 {/snippet}
 
