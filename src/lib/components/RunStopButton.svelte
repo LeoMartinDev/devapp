@@ -14,9 +14,23 @@
     "inline-flex items-center justify-center border border-emerald-500/50 bg-emerald-500/10 text-emerald-500 transition-colors hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:border-border disabled:text-text-subtle disabled:bg-transparent";
   const stopClass =
     "inline-flex items-center justify-center border border-danger/30 bg-danger/10 text-danger transition-colors hover:bg-danger/20 disabled:cursor-not-allowed disabled:opacity-55";
+  const busyClass =
+    "inline-flex items-center justify-center border border-warning/30 bg-warning/10 text-warning cursor-not-allowed";
 </script>
 
-{#if active}
+{#if busy}
+  <span
+    class="{busyClass} {compact ? 'h-5 w-5 rounded p-px' : 'h-8 rounded-md px-2 text-xs'}"
+    aria-label="Busy"
+    title="Operation in progress"
+  >
+    <svg class="animate-spin" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" stroke-opacity="0.25" />
+      <path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round" />
+    </svg>
+    {#if !compact}<span>Busy</span>{/if}
+  </span>
+{:else if active}
   <button
     type="button"
     class="{stopClass} {compact ? 'h-5 w-5 rounded p-px' : 'h-8 rounded-md px-2 text-xs'}"
