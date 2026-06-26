@@ -247,6 +247,14 @@
       role="toolbar"
       tabindex="0"
       aria-label="Log actions"
+      onfocus={(e: FocusEvent) => {
+        const buttons = Array.from(
+          (e.currentTarget as HTMLElement).querySelectorAll<HTMLElement>("button"),
+        );
+        if (buttons.length === 0) return;
+        const active = buttons.find((b) => b.getAttribute("aria-pressed") === "true") ?? buttons[0];
+        active.focus();
+      }}
       onkeydown={(e: KeyboardEvent) => {
         const target = e.currentTarget as HTMLElement | null;
         if (!target) return;
@@ -265,6 +273,7 @@
     >
       <button
         type="button"
+        tabindex="-1"
         class={`grid h-8 w-8 place-items-center rounded-md text-text-subtle transition-colors hover:bg-surface-hover hover:text-text ${
           autoScroll ? "text-accent hover:text-accent" : ""
         }`}
@@ -281,6 +290,7 @@
 
       <button
         type="button"
+        tabindex="-1"
         class="grid h-8 w-8 place-items-center rounded-md text-text-subtle transition-colors hover:bg-surface-hover hover:text-text"
         onclick={togglePaused}
         aria-pressed={paused}
