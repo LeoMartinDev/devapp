@@ -2,9 +2,11 @@ use std::{
     collections::HashMap,
     io::{Read, Write},
     path::Path,
-    sync::{Arc, Mutex},
+    sync::Arc,
     thread,
 };
+
+use tokio::sync::Mutex;
 
 use chrono::Utc;
 use portable_pty::{native_pty_system, CommandBuilder, PtySize};
@@ -39,7 +41,7 @@ impl TerminalManager {
         }
     }
 
-    pub fn open_terminal(
+    pub async fn open_terminal(
         &self,
         app_handle: AppHandle,
         window_key: String,
@@ -86,10 +88,7 @@ impl TerminalManager {
         };
 
         {
-            let mut terminals = self
-                .inner
-                .lock()
-                .map_err(|_| AppError::terminal("terminal manager lock poisoned"))?;
+            let mut terminals = self.inner.lock().await;
             terminals.insert(
                 terminal_id.clone(),
                 ManagedTerminal {
@@ -140,15 +139,12 @@ impl TerminalManager {
         Ok(snapshot)
     }
 
-    pub fn write_terminal(
+    pub async fn write_terminal(
         &self,
         terminal_id: &TerminalSessionId,
         data: &str,
     ) -> Result<(), AppError> {
-        let mut terminals = self
-            .inner
-            .lock()
-            .map_err(|_| AppError::terminal("terminal manager lock poisoned"))?;
+        let mut terminals = self.inner.lock().await;
         let terminal = terminals
             .get_mut(terminal_id)
             .ok_or_else(|| AppError::terminal("terminal not found"))?;
@@ -163,16 +159,13 @@ impl TerminalManager {
         Ok(())
     }
 
-    pub fn resize_terminal(
+    pub async fn resize_terminal(
         &self,
         terminal_id: &TerminalSessionId,
         cols: u16,
         rows: u16,
     ) -> Result<(), AppError> {
-        let terminals = self
-            .inner
-            .lock()
-            .map_err(|_| AppError::terminal("terminal manager lock poisoned"))?;
+        let terminals = self.inner.lock().await;
         let terminal = terminals
             .get(terminal_id)
             .ok_or_else(|| AppError::terminal("terminal not found"))?;
@@ -188,16 +181,13 @@ impl TerminalManager {
         Ok(())
     }
 
-    pub fn close_terminal(
+    pub async fn close_terminal(
         &self,
         app_handle: AppHandle,
         terminal_id: &TerminalSessionId,
     ) -> Result<Option<TerminalSnapshot>, AppError> {
         let maybe_closed = {
-            let mut terminals = self
-                .inner
-                .lock()
-                .map_err(|_| AppError::terminal("terminal manager lock poisoned"))?;
+            let mut terminals = self.inner.lock().await;
             terminals.remove(terminal_id).map(|mut terminal| {
                 let _ = terminal.child.kill();
                 terminal.snapshot.is_open = false;
@@ -220,16 +210,13 @@ impl TerminalManager {
         Ok(maybe_closed.map(|(_, snapshot)| snapshot))
     }
 
-    pub fn close_all_for_window(
+    pub async fn close_all_for_window(
         &self,
         app_handle: AppHandle,
         window_key: &str,
     ) -> Result<(), AppError> {
         let ids = {
-            let terminals = self
-                .inner
-                .lock()
-                .map_err(|_| AppError::terminal("terminal manager lock poisoned"))?;
+            let terminals = self.inner.lock().await;
             terminals
                 .iter()
                 .filter_map(|(id, terminal)| {
