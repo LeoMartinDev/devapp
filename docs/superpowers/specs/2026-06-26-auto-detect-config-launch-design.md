@@ -72,8 +72,8 @@ if let Some(config_path) = config_path {
             *launch_project_id = Some(project.id);
         }
         Err(error) => {
-            let mut ui_error = state.ui_error.lock().await;
-            *ui_error = Some(format!(
+            let mut launch_error = state.launch_error.lock().await;
+            *launch_error = Some(format!(
                 "Failed to load auto-detected config {}: {}",
                 config_path.display(), error
             ));
@@ -87,11 +87,31 @@ Key points:
 - On import success, `launch_project_id` is set → frontend receives
   `launchLocked=true` and auto-starts the session.
 - On import failure (bad YAML, schema error), the error is stored in
-  `ui_error` and `launch_project_id` stays `None` → frontend shows the
-  error banner on top of the WelcomeScreen.
-- `launchLocked` remains `false` on error, so the user can navigate freely.
+  `state.launch_error`, `launch_project_id` stays `None`, and
+  `launchLocked` remains `false`.
 
-### 3. Imports
+### 3. Expose launch error to the frontend
+
+`AppState` gains a `launch_error` field (`Arc<Mutex<Option<String>>>`),
+initialised to `None`.
+
+`LaunchProjectInfo` in `src-tauri/src/tauri_api/commands.rs` gains an
+optional `error` field:
+
+```rust
+pub struct LaunchProjectInfo {
+    pub project_id: Option<ProjectId>,
+    pub locked: bool,
+    pub error: Option<String>,
+}
+```
+
+`get_launch_project` populates `error` from `state.launch_error`.
+
+In `src/lib/stores/runtime.svelte.ts`, during `#applyLaunchParams()`,
+if `launchInfo.error` is present, set `this.uiError = launchInfo.error`.
+
+### 4. Imports
 
 `src-tauri/src/lib.rs` gains one import:
 
@@ -114,11 +134,12 @@ use crate::infrastructure::config_loader::find_config_in_cwd_or_parents;
 |------|--------|
 | `src-tauri/src/infrastructure/config_loader.rs` | Add `find_config_in_cwd_or_parents()` |
 | `src-tauri/src/lib.rs` | Integrate auto-detection in setup; add import |
+| `src-tauri/src/tauri_api/state.rs` | Add `launch_error` field to `AppState` |
+| `src-tauri/src/tauri_api/commands.rs` | Add `error` to `LaunchProjectInfo`; populate it in `get_launch_project` |
+| `src/lib/stores/runtime.svelte.ts` | Display `launchInfo.error` as `uiError` during init |
 
 ## Non-Goals
 
-- No frontend changes required. The existing `WelcomeScreen`, error
-  banner, and locked-launch flows handle all cases.
 - No search for alternate filenames (`.devapp.yml`, `devapp.yaml`, etc.).
   Only `devapp.yml` is checked.
 - No recursive directory search. Only linear parent walk-up.
