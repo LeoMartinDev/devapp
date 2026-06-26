@@ -33,6 +33,10 @@
   let previouslyFocused = $state<HTMLElement | null>(null);
   let wasOpen = $state(false);
 
+  const prefersReducedMotion = typeof window !== "undefined"
+    ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    : false;
+
   const sizeClass: Record<Size, string> = {
     sm: "w-[min(440px,calc(100vw-32px))]",
     md: "w-[min(560px,calc(100vw-32px))]",
@@ -118,7 +122,7 @@
     <button
       type="button"
       class="absolute inset-0 bg-black/60 backdrop-blur-sm"
-      transition:fly={{ duration: 150 }}
+      transition:fly={{ duration: prefersReducedMotion ? 0 : 150 }}
       aria-label="Close dialog"
       tabindex="-1"
       onclick={() => closeOnOverlay && onClose()}
@@ -126,7 +130,7 @@
     <div
       bind:this={panel}
       class={`relative z-10 flex max-h-[calc(100vh-44px)] min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-surface text-text shadow-2xl outline-none ${sizeClass[size]}`}
-      transition:scale={{ duration: 150, start: 0.95 }}
+      transition:scale={{ duration: prefersReducedMotion ? 0 : 150, start: 0.95 }}
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
@@ -137,7 +141,7 @@
         <h2 id={titleId} class="text-sm font-semibold">{title}</h2>
         {#if description}
           <p id={descriptionId} class="mt-1 text-xs leading-5 text-text-subtle">{description}</p>
-      {/if}
+        {/if}
       </header>
 
       <div class="min-h-0 flex-1 overflow-hidden">
