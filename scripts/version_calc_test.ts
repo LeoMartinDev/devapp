@@ -50,6 +50,14 @@ Deno.test("uses max counter + 1 when there are gaps", () => {
   });
 });
 
+Deno.test("ignores tags with malformed suffix after a valid prefix", () => {
+  const now = new Date(2026, 5, 26);
+  assertEqual(
+    computeVersion(now, ["v26.6.26-1-bogus", "v26.6.26-1a"]),
+    { version: "26.6.26-1", tag: "v26.6.26-1" },
+  );
+});
+
 Deno.test("no leading zeros for single-digit month and day", () => {
   const now = new Date(2026, 1, 9); // 2026-02-09
   assertEqual(computeVersion(now, []), {

@@ -21,7 +21,7 @@ export function computeVersion(now: Date, existingTags: string[]): VersionResult
     if (!tag.startsWith(tagPrefix)) continue;
     const suffix = tag.slice(tagPrefix.length);
     const n = Number.parseInt(suffix, 10);
-    if (Number.isInteger(n) && n > max) max = n;
+    if (String(n) === suffix && n > max) max = n;
   }
 
   const n = max + 1;
