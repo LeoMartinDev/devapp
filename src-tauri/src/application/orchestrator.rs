@@ -103,7 +103,7 @@ impl ProcessOrchestrator {
 
             let mut processes = HashMap::new();
             for (name, config) in &loaded_config.config.processes {
-                let (log_tx, _) = broadcast::channel(256);
+                let (log_tx, _) = broadcast::channel(4096);
                 let snapshot = ProcessSnapshot {
                     runtime_id: ProcessRuntimeId::new(),
                     name: name.clone(),
