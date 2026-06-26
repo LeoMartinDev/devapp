@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
+  import Toast from "$lib/components/ui/Toast.svelte";
 
   type Props = {
     processList: Snippet;
@@ -28,4 +29,5 @@
       </div>
     </section>
   </div>
+  <Toast />
 </main>
