@@ -126,7 +126,7 @@
         <polyline points="4 17 10 11 4 5" />
         <line x1="12" y1="19" x2="20" y2="19" />
       </svg>
-      <div class="text-sm text-text-subtle">Open a terminal from the project menu</div>
+      <div class="text-sm text-text-subtle">No terminal open</div>
       <button
         type="button"
         class="rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-text transition-colors hover:bg-surface-hover hover:border-text-muted"
@@ -134,6 +134,7 @@
       >
         Open terminal
       </button>
+      <span class="text-xs text-text-subtle">or press Ctrl+T</span>
     </div>
   {/if}
 </section>

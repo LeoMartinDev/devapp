@@ -8,6 +8,7 @@
   import ProjectSettingsDialog from "$lib/components/ProjectSettingsDialog.svelte";
   import TerminalPane from "$lib/components/TerminalPane.svelte";
   import TitleBar from "$lib/components/TitleBar.svelte";
+  import WelcomeScreen from "$lib/components/WelcomeScreen.svelte";
   import Button from "$lib/components/ui/Button.svelte";
   import { runtimeStore } from "$lib/stores/runtime.svelte";
   import { setWindowTitle } from "$lib/tauri/client";
@@ -219,6 +220,8 @@
             onClear={() => runtimeStore.clearSelectedProcessLogs()}
             onActions={(actions) => (runtimeStore.logActions = actions)}
           />
+        {:else if !runtimeStore.projectId && !session}
+          <WelcomeScreen />
         {:else}
           <div class="grid h-full place-items-center px-6 text-center">
             <div class="max-w-sm">
