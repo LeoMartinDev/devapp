@@ -231,7 +231,7 @@
 <svelte:window onkeydown={handleKeydown} />
 
 <section class="flex h-full min-h-0 flex-col bg-canvas">
-  <div class="flex items-center gap-1.5 border-b border-border px-2 py-1">
+  <div class="flex items-center gap-1.5 border-b border-border px-2 pt-[4px] pb-[5px]">
     <div class="relative min-w-0 flex-1">
       <svg
         class="pointer-events-none absolute left-1.5 top-1/2 -translate-y-1/2 text-text-subtle"
@@ -247,7 +247,7 @@
         type="text"
         placeholder="Search logs"
         spellcheck="false"
-        class="h-6 w-full rounded-md border border-border bg-surface-raised pl-6 pr-2 text-[11px] text-text outline-none transition-colors placeholder:text-text-subtle focus:border-accent"
+        class="h-6 w-full rounded-md border border-border bg-surface-raised pl-6 pr-2 text-[11px] text-text outline-none transition-colors placeholder:text-[10px] placeholder:text-text-subtle focus:border-accent"
       />
       {#if matchCount !== null}
         <span class="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] text-text-subtle">
