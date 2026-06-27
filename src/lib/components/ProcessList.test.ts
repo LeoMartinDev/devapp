@@ -203,12 +203,12 @@ describe("ProcessList task processes", () => {
     expect(queryByRole("button", { name: "Restart api" })).toBeNull();
   });
 
-  it("renders disabled placeholder action for a running task", () => {
-    const { getByRole } = render(ProcessList, {
+  it("keeps the running task row selectable without rendering a separate action button", () => {
+    const { getByRole, queryByRole } = render(ProcessList, {
       props: makeProps({ processes: [makeProcess({ kind: "task", status: "running" })] }),
     });
 
-    // Task rows keep the disabled placeholder button for layout consistency.
-    expect(getByRole("button", { name: "api" })).toBeDisabled();
+    expect(getByRole("button", { name: "api running" })).toBeEnabled();
+    expect(queryByRole("button", { name: "api" })).toBeNull();
   });
 });

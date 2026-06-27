@@ -57,7 +57,7 @@ async function openMenu(getByRole: (role: string, options?: { name?: string }) =
 describe("ProjectMenu", () => {
   describe("with a registered project", () => {
     it("always exposes Edit project and Runtime config", async () => {
-      const { getByRole } = render(ProjectMenu, make_props());
+      const { getByRole } = render(ProjectMenu, makeProps());
 
       await openMenu(getByRole);
 
@@ -66,7 +66,7 @@ describe("ProjectMenu", () => {
     });
 
     it("always exposes Open terminal", async () => {
-      const { getByRole } = render(ProjectMenu, make_props());
+      const { getByRole } = render(ProjectMenu, makeProps());
 
       await openMenu(getByRole);
 
@@ -74,7 +74,7 @@ describe("ProjectMenu", () => {
     });
 
     it("does not show process-specific actions when nothing is selected", async () => {
-      const { getByRole, queryByRole } = render(ProjectMenu, make_props());
+      const { getByRole, queryByRole } = render(ProjectMenu, makeProps());
 
       await openMenu(getByRole);
 
@@ -85,7 +85,7 @@ describe("ProjectMenu", () => {
 
     it("calls onEditProject when Edit project is clicked", async () => {
       const onEditProject = vi.fn();
-      const { getByRole } = render(ProjectMenu, make_props({ props: { onEditProject } }));
+      const { getByRole } = render(ProjectMenu, makeProps({ props: { onEditProject } }));
 
       await openMenu(getByRole);
       await fireEvent.click(getByRole("menuitem", { name: "Edit project" }));
@@ -95,7 +95,7 @@ describe("ProjectMenu", () => {
 
     it("calls onOpenConfig when Runtime config is clicked", async () => {
       const onOpenConfig = vi.fn();
-      const { getByRole } = render(ProjectMenu, make_props({ props: { onOpenConfig } }));
+      const { getByRole } = render(ProjectMenu, makeProps({ props: { onOpenConfig } }));
 
       await openMenu(getByRole);
       await fireEvent.click(getByRole("menuitem", { name: "Runtime config" }));
@@ -110,7 +110,7 @@ describe("ProjectMenu", () => {
     it("exposes Restart and Stop named after the process", async () => {
       const { getByRole } = render(
         ProjectMenu,
-        make_props({ props: { selection: processSelection, selectedProcess: process } }),
+        makeProps({ props: { selection: processSelection, selectedProcess: process } }),
       );
 
       await openMenu(getByRole);
@@ -122,7 +122,7 @@ describe("ProjectMenu", () => {
     it("exposes Copy logs and Clear logs only once log actions are registered", async () => {
       const { getByRole, rerender } = render(
         ProjectMenu,
-        make_props({ props: { selection: processSelection, selectedProcess: process } }),
+        makeProps({ props: { selection: processSelection, selectedProcess: process } }),
       );
       await openMenu(getByRole);
 
@@ -132,7 +132,7 @@ describe("ProjectMenu", () => {
 
       rerender(
         // @ts-expect-error: partial props merge for rerender
-        make_props({
+        makeProps({
           props: {
             selection: processSelection,
             selectedProcess: process,
@@ -149,7 +149,7 @@ describe("ProjectMenu", () => {
       const onRestartProcess = vi.fn();
       const { getByRole } = render(
         ProjectMenu,
-        make_props({
+        makeProps({
           props: { selection: processSelection, selectedProcess: process, onRestartProcess },
         }),
       );
@@ -164,7 +164,7 @@ describe("ProjectMenu", () => {
       const onStopProcess = vi.fn();
       const { getByRole } = render(
         ProjectMenu,
-        make_props({
+        makeProps({
           props: { selection: processSelection, selectedProcess: process, onStopProcess },
         }),
       );
@@ -179,7 +179,7 @@ describe("ProjectMenu", () => {
       const copy = vi.fn();
       const { getByRole } = render(
         ProjectMenu,
-        make_props({
+        makeProps({
           props: {
             selection: processSelection,
             selectedProcess: process,
@@ -201,7 +201,7 @@ describe("ProjectMenu", () => {
     it("exposes Close named after the terminal", async () => {
       const { getByRole } = render(
         ProjectMenu,
-        make_props({ props: { selection: terminalSelection, selectedTerminal: terminal } }),
+        makeProps({ props: { selection: terminalSelection, selectedTerminal: terminal } }),
       );
 
       await openMenu(getByRole);
@@ -212,7 +212,7 @@ describe("ProjectMenu", () => {
     it("does not show process-specific actions", async () => {
       const { queryByRole, getByRole } = render(
         ProjectMenu,
-        make_props({ props: { selection: terminalSelection, selectedTerminal: terminal } }),
+        makeProps({ props: { selection: terminalSelection, selectedTerminal: terminal } }),
       );
 
       await openMenu(getByRole);
@@ -225,7 +225,7 @@ describe("ProjectMenu", () => {
       const onCloseTerminal = vi.fn();
       const { getByRole } = render(
         ProjectMenu,
-        make_props({
+        makeProps({
           props: { selection: terminalSelection, selectedTerminal: terminal, onCloseTerminal },
         }),
       );
@@ -239,7 +239,7 @@ describe("ProjectMenu", () => {
 
   describe("Open terminal", () => {
     it("is disabled when busy", async () => {
-      const { getByRole } = render(ProjectMenu, make_props({ props: { busy: true } }));
+      const { getByRole } = render(ProjectMenu, makeProps({ props: { busy: true } }));
 
       await openMenu(getByRole);
 
@@ -248,7 +248,7 @@ describe("ProjectMenu", () => {
 
     it("calls onOpenTerminal when enabled and clicked", async () => {
       const onOpenTerminal = vi.fn();
-      const { getByRole } = render(ProjectMenu, make_props({ props: { onOpenTerminal } }));
+      const { getByRole } = render(ProjectMenu, makeProps({ props: { onOpenTerminal } }));
 
       await openMenu(getByRole);
       await fireEvent.click(getByRole("menuitem", { name: "Open terminal" }));

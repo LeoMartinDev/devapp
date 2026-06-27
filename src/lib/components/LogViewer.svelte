@@ -230,7 +230,7 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<section class="flex h-full min-h-0 flex-col bg-canvas">
+<section class="flex h-full min-h-0 flex-col border-l border-accent/20 bg-canvas">
   <div class="flex items-center gap-1.5 border-b border-border px-2 pt-[4px] pb-[5px]">
     <div class="relative min-w-0 flex-1">
       <svg
@@ -247,7 +247,7 @@
         type="text"
         placeholder="Search logs"
         spellcheck="false"
-        class="h-6 w-full rounded-md border border-border bg-surface-raised pl-6 pr-2 text-[11px] text-text outline-none transition-colors duration-75 placeholder:text-[10px] placeholder:text-text-subtle focus:border-accent"
+        class="h-7 w-full rounded-md border border-border bg-surface-raised pl-6 pr-2 text-[12px] text-text outline-none transition-colors duration-75 placeholder:text-[11px] placeholder:text-text-subtle focus:border-accent"
       />
       {#if matchCount !== null}
         <span class="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] text-text-subtle">
@@ -345,7 +345,7 @@
   {#if paused}
     <div class="flex items-center gap-2 border-b border-border bg-warning/5 px-3 py-1.5 text-[11px] text-warning">
       <span class="relative inline-flex h-1.5 w-1.5">
-        <span class="absolute inline-flex h-1.5 w-1.5 animate-ping rounded-full bg-warning opacity-60"></span>
+        <span class="absolute inline-flex h-1.5 w-1.5 rounded-full bg-warning/20 ring-2 ring-warning/20"></span>
         <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-warning"></span>
       </span>
       Paused — log collection continues in the background.

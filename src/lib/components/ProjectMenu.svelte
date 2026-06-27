@@ -51,23 +51,25 @@
 
     if (project) {
       if (!launchLocked) {
-        built.push({ label: "Edit project", onSelect: () => onEditProject(project) });
+        built.push({ label: "Edit project", icon: "edit", onSelect: () => onEditProject(project) });
       }
-      built.push({ label: "Runtime config", onSelect: onOpenConfig, dividerAfter: true });
+      built.push({ label: "Runtime config", icon: "config", onSelect: onOpenConfig, dividerAfter: true });
     }
 
     if (selection?.kind === "process" && selectedProcess) {
       const name = selectedProcess.name;
-      built.push({ label: `Restart ${name}`, onSelect: () => onRestartProcess(name) });
+      built.push({ label: `Restart ${name}`, icon: "restart", onSelect: () => onRestartProcess(name) });
       built.push({
         label: `Stop ${name}`,
+        icon: "stop",
         onSelect: () => onStopProcess(name),
         danger: true,
         dividerAfter: true,
       });
-      built.push({ label: "Copy logs", onSelect: () => logActions?.copy(), disabled: !logActions });
+      built.push({ label: "Copy logs", icon: "copy", onSelect: () => logActions?.copy(), disabled: !logActions });
       built.push({
         label: "Clear logs",
+        icon: "clear",
         onSelect: () => logActions?.clear(),
         disabled: !logActions,
         danger: true,
@@ -77,12 +79,13 @@
     if (selection?.kind === "terminal" && selectedTerminal) {
       built.push({
         label: `Close ${selectedTerminal.title}`,
+        icon: "close",
         onSelect: onCloseTerminal,
         danger: true,
       });
     }
 
-    built.push({ label: "Open terminal", onSelect: onOpenTerminal, disabled: busy });
+    built.push({ label: "Open terminal", icon: "terminal", onSelect: onOpenTerminal, disabled: busy });
 
     return built;
   }

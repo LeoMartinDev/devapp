@@ -83,7 +83,7 @@
       {@const restartable = !busy && (action === "stop" || action === "start")}
       <div
         class={`group relative flex items-center gap-2.5 rounded-md px-3 py-1.5 transition-colors duration-75 ${
-          selected ? "bg-surface-raised" : "hover:bg-surface-hover"
+          selected ? "bg-surface-raised" : "hover:bg-surface-raised/70"
         }`}
       >
         <button
@@ -177,7 +177,7 @@
       {@const selected = terminal.terminalId === selectedTerminalId}
       <div
         class={`group relative flex items-center gap-2.5 rounded-md px-3 py-1.5 transition-colors duration-75 ${
-          selected ? "bg-surface-raised" : "hover:bg-surface-hover"
+          selected ? "bg-surface-raised" : "hover:bg-surface-raised/70"
         }`}
       >
         <button

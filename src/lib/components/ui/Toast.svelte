@@ -26,7 +26,7 @@
   <div class="pointer-events-none fixed bottom-4 right-4 z-[60] flex flex-col-reverse gap-2">
     {#each toasts as toast (toast.id)}
       <div
-        class="pointer-events-auto flex items-start gap-2 rounded-lg border bg-surface-raised px-3 py-2.5 text-sm shadow-lg animate-slide-in-right {borderByType[toast.type]}"
+        class="pointer-events-auto flex items-start gap-2 rounded-lg border bg-surface-raised px-3 py-2.5 text-sm shadow-lg select-none animate-toast-in {borderByType[toast.type]}"
         style="max-width: 320px"
       >
         <span class="{textByType[toast.type]} mt-0.5 text-sm">{iconByType[toast.type]}</span>
@@ -38,7 +38,7 @@
         </div>
         <button
           type="button"
-          class="ml-1 shrink-0 text-text-subtle hover:text-text"
+          class="ml-1 shrink-0 rounded-sm text-text-subtle transition-colors duration-75 hover:text-text"
           aria-label="Dismiss"
           onclick={() => toastStore.dismiss(toast.id)}
         >
@@ -52,11 +52,18 @@
 {/if}
 
 <style>
-  @keyframes slide-in-right {
-    from { transform: translateX(100%); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
+  @keyframes toast-in {
+    from { transform: translateY(6px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
   }
-  .animate-slide-in-right {
-    animation: slide-in-right 0.2s ease-out;
+
+  .animate-toast-in {
+    animation: toast-in 90ms ease-out;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-toast-in {
+      animation: none;
+    }
   }
 </style>

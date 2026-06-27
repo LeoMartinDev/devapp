@@ -114,7 +114,7 @@
   });
 </script>
 
-<section class="flex h-full min-h-0 flex-col bg-canvas">
+<section class="flex h-full min-h-0 flex-col border-l border-accent/20 bg-canvas">
   <div
     bind:this={host}
     data-native-selectable="terminal"

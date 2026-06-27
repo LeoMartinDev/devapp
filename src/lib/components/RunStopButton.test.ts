@@ -33,12 +33,13 @@ describe("RunStopButton", () => {
       expect(getByRole("button", { name: "Run project" })).toBeDisabled();
     });
 
-    it("is disabled when busy", () => {
-      const { getByRole } = render(RunStopButton, {
+    it("shows a busy indicator instead of a Run button when busy", () => {
+      const { getByLabelText, queryByRole } = render(RunStopButton, {
         props: { active: false, busy: true, onRun: vi.fn(), onStop: vi.fn() },
       });
 
-      expect(getByRole("button", { name: "Run project" })).toBeDisabled();
+      expect(getByLabelText("Busy")).toBeInTheDocument();
+      expect(queryByRole("button", { name: "Run project" })).toBeNull();
     });
   });
 
@@ -63,12 +64,13 @@ describe("RunStopButton", () => {
       expect(onStop).toHaveBeenCalledOnce();
     });
 
-    it("is disabled when busy", () => {
-      const { getByRole } = render(RunStopButton, {
+    it("shows a busy indicator instead of a Stop button when busy", () => {
+      const { getByLabelText, queryByRole } = render(RunStopButton, {
         props: { active: true, busy: true, onRun: vi.fn(), onStop: vi.fn() },
       });
 
-      expect(getByRole("button", { name: "Stop current run" })).toBeDisabled();
+      expect(getByLabelText("Busy")).toBeInTheDocument();
+      expect(queryByRole("button", { name: "Stop current run" })).toBeNull();
     });
   });
 });

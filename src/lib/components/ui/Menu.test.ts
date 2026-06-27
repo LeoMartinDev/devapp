@@ -92,4 +92,30 @@ describe("Menu", () => {
 
     expect(queryByRole("menuitem", { name: "First" })).toBeNull();
   });
+
+  it("focuses the first enabled item when opened and supports arrow navigation", async () => {
+    const { getByRole } = render(Menu, {
+      props: {
+        label: "Actions",
+        items: [
+          { label: "Disabled", onSelect: vi.fn(), disabled: true },
+          { label: "First", onSelect: vi.fn() },
+          { label: "Second", onSelect: vi.fn() },
+        ],
+      },
+    });
+
+    await fireEvent.click(getByRole("button", { name: "Actions" }));
+
+    const first = getByRole("menuitem", { name: "First" });
+    const second = getByRole("menuitem", { name: "Second" });
+
+    expect(document.activeElement).toBe(first);
+
+    await fireEvent.keyDown(window, { key: "ArrowDown" });
+    expect(document.activeElement).toBe(second);
+
+    await fireEvent.keyDown(window, { key: "ArrowUp" });
+    expect(document.activeElement).toBe(first);
+  });
 });
