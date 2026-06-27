@@ -9,6 +9,7 @@ use std::path::PathBuf;
 use tauri::Manager;
 use tracing::{error, warn};
 
+use crate::infrastructure::config_loader::find_config_in_cwd_or_parents;
 use crate::tauri_api::state::AppState;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -40,13 +41,25 @@ pub fn run() {
 
             let state = app.state::<AppState>().inner().clone();
             tauri::async_runtime::block_on(async move {
-                if let Some(config_path) = launch_config_path() {
-                    let project = {
-                        let store = state.project_store.lock().await;
-                        store.import_project_config_path(config_path)?
-                    };
-                    let mut launch_project_id = state.launch_project_id.lock().await;
-                    *launch_project_id = Some(project.id);
+                let config_path = launch_config_path()
+                    .or_else(|| find_config_in_cwd_or_parents());
+
+                if let Some(config_path) = config_path {
+                    match state.project_store.lock().await
+                        .import_project_config_path(config_path.clone())
+                    {
+                        Ok(project) => {
+                            let mut launch_project_id = state.launch_project_id.lock().await;
+                            *launch_project_id = Some(project.id);
+                        }
+                        Err(error) => {
+                            let mut launch_error = state.launch_error.lock().await;
+                            *launch_error = Some(format!(
+                                "Failed to load auto-detected config {}: {}",
+                                config_path.display(), error
+                            ));
+                        }
+                    }
                 }
                 Ok::<(), crate::error::AppError>(())
             })
