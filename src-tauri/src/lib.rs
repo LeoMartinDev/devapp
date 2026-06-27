@@ -7,7 +7,7 @@ pub mod tauri_api;
 use std::path::PathBuf;
 
 use tauri::Manager;
-use tracing::{error, warn};
+use tracing::{error, info, warn};
 
 use crate::infrastructure::config_loader::find_config_in_cwd_or_parents;
 use crate::tauri_api::state::AppState;
@@ -41,10 +41,20 @@ pub fn run() {
 
             let state = app.state::<AppState>().inner().clone();
             tauri::async_runtime::block_on(async move {
+                let cwd = std::env::current_dir().ok();
                 let cli_config_path = launch_config_path();
+                let auto_detected_path = find_config_in_cwd_or_parents();
                 let config_path = cli_config_path
                     .clone()
-                    .or_else(|| find_config_in_cwd_or_parents());
+                    .or_else(|| auto_detected_path.clone());
+
+                info!(
+                    cwd = ?cwd,
+                    cli_path = ?cli_config_path,
+                    auto_detected_path = ?auto_detected_path,
+                    selected_path = ?config_path,
+                    "launch config detection"
+                );
 
                 if let Some(config_path) = config_path {
                     if cli_config_path.is_some() {
@@ -52,6 +62,7 @@ pub fn run() {
                             let store = state.project_store.lock().await;
                             store.import_project_config_path(config_path)?
                         };
+                        info!(project_id = ?project.id, "imported CLI config");
                         let mut launch_project_id = state.launch_project_id.lock().await;
                         *launch_project_id = Some(project.id);
                     } else {
@@ -63,11 +74,13 @@ pub fn run() {
                             .import_project_config_path(config_path)
                         {
                             Ok(project) => {
+                                info!(project_id = ?project.id, "imported auto-detected config");
                                 let mut launch_project_id =
                                     state.launch_project_id.lock().await;
                                 *launch_project_id = Some(project.id);
                             }
                             Err(error) => {
+                                info!(error = %error, "failed to import auto-detected config");
                                 let mut launch_error = state.launch_error.lock().await;
                                 *launch_error = Some(format!(
                                     "Failed to load auto-detected config {}: {}",
