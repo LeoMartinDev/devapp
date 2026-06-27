@@ -138,11 +138,11 @@ pub async fn get_launch_project(
     state: State<'_, AppState>,
 ) -> Result<LaunchProjectInfo, String> {
     let launch_project_id = state.launch_project_id.lock().await;
-    let launch_error = state.launch_error.lock().await;
+    let mut launch_error = state.launch_error.lock().await;
     Ok(LaunchProjectInfo {
         project_id: launch_project_id.clone(),
         locked: launch_project_id.is_some(),
-        error: launch_error.clone(),
+        error: launch_error.take(),
     })
 }
 

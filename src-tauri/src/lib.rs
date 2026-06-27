@@ -41,23 +41,39 @@ pub fn run() {
 
             let state = app.state::<AppState>().inner().clone();
             tauri::async_runtime::block_on(async move {
-                let config_path = launch_config_path()
+                let cli_config_path = launch_config_path();
+                let config_path = cli_config_path
+                    .clone()
                     .or_else(|| find_config_in_cwd_or_parents());
 
                 if let Some(config_path) = config_path {
-                    match state.project_store.lock().await
-                        .import_project_config_path(config_path.clone())
-                    {
-                        Ok(project) => {
-                            let mut launch_project_id = state.launch_project_id.lock().await;
-                            *launch_project_id = Some(project.id);
-                        }
-                        Err(error) => {
-                            let mut launch_error = state.launch_error.lock().await;
-                            *launch_error = Some(format!(
-                                "Failed to load auto-detected config {}: {}",
-                                config_path.display(), error
-                            ));
+                    if cli_config_path.is_some() {
+                        let project = {
+                            let store = state.project_store.lock().await;
+                            store.import_project_config_path(config_path)?
+                        };
+                        let mut launch_project_id = state.launch_project_id.lock().await;
+                        *launch_project_id = Some(project.id);
+                    } else {
+                        let config_path_display = config_path.display().to_string();
+                        match state
+                            .project_store
+                            .lock()
+                            .await
+                            .import_project_config_path(config_path)
+                        {
+                            Ok(project) => {
+                                let mut launch_project_id =
+                                    state.launch_project_id.lock().await;
+                                *launch_project_id = Some(project.id);
+                            }
+                            Err(error) => {
+                                let mut launch_error = state.launch_error.lock().await;
+                                *launch_error = Some(format!(
+                                    "Failed to load auto-detected config {}: {}",
+                                    config_path_display, error
+                                ));
+                            }
                         }
                     }
                 }
