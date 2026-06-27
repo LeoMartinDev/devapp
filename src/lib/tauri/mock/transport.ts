@@ -152,7 +152,11 @@ export async function invoke<T = unknown>(
       return allProjects() as unknown as T;
 
     case "get_launch_project":
-      return mockProjects[0].record.id as unknown as T;
+      return {
+        projectId: mockProjects[0]?.record.id ?? null,
+        locked: false,
+        error: null,
+      } as unknown as T;
 
     case "get_session_snapshot":
       return currentSession as unknown as T;

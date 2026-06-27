@@ -29,6 +29,7 @@ export type SaveProjectInput = {
 export interface LaunchProjectInfo {
   projectId: string | null;
   locked: boolean;
+  error?: string | null;
 }
 
 export async function getLaunchProject(): Promise<LaunchProjectInfo> {
