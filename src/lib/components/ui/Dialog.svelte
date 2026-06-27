@@ -1,15 +1,18 @@
 <script lang="ts">
+  import IconButton from "./IconButton.svelte";
   import { tick } from "svelte";
   import { fly, scale } from "svelte/transition";
   import type { Snippet } from "svelte";
 
   type Size = "sm" | "md" | "lg" | "xl";
+  type Variant = "modal" | "panel";
 
   type Props = {
     open: boolean;
     title: string;
     description?: string;
     size?: Size;
+    variant?: Variant;
     onClose: () => void;
     closeOnOverlay?: boolean;
     children?: Snippet;
@@ -21,6 +24,7 @@
     title,
     description,
     size = "md",
+    variant = "modal",
     onClose,
     closeOnOverlay = true,
     children,
@@ -33,7 +37,7 @@
   let previouslyFocused = $state<HTMLElement | null>(null);
   let wasOpen = $state(false);
 
-  const prefersReducedMotion = typeof window !== "undefined"
+  const prefersReducedMotion = typeof window !== "undefined" && typeof window.matchMedia === "function"
     ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
     : false;
 
@@ -43,6 +47,22 @@
     lg: "w-[min(840px,calc(100vw-32px))]",
     xl: "w-[min(1040px,calc(100vw-32px))]",
   };
+
+  const layoutClass = $derived(
+    variant === "panel"
+      ? "pointer-events-none items-center justify-center p-4 sm:items-start sm:justify-end sm:pt-[46px]"
+      : "items-center justify-center p-4",
+  );
+
+  const overlayClass = $derived(
+    variant === "panel" ? "pointer-events-none bg-transparent" : "bg-black/40",
+  );
+
+  const panelClass = $derived(
+    variant === "panel"
+      ? `pointer-events-auto sm:h-[calc(100vh-56px)] sm:max-h-[calc(100vh-56px)] ${sizeClass[size]}`
+      : sizeClass[size],
+  );
 
   const focusableSelector = [
     "a[href]",
@@ -64,7 +84,10 @@
 
   async function focusInitial() {
     await tick();
-    const first = focusableElements()[0] ?? panel;
+    const elements = focusableElements();
+    const first = variant === "panel"
+      ? elements.find((element) => !element.hasAttribute("data-dialog-dismiss")) ?? panel
+      : elements[0] ?? panel;
     first?.focus();
   }
 
@@ -72,11 +95,22 @@
     if (!open) {
       return;
     }
+
+    const target = event.target as Node | null;
+    const focusInsidePanel = !!panel && !!target && panel.contains(target);
+
     if (event.key === "Escape") {
-      event.preventDefault();
-      onClose();
+      if (variant === "modal" || focusInsidePanel) {
+        event.preventDefault();
+        onClose();
+      }
       return;
     }
+
+    if (variant === "panel") {
+      return;
+    }
+
     if (event.key !== "Tab") {
       return;
     }
@@ -118,30 +152,58 @@
 <svelte:window onkeydown={handleKeydown} />
 
 {#if open}
-  <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
-    <button
-      type="button"
-      class="absolute inset-0 bg-black/40"
-      transition:fly={{ duration: prefersReducedMotion ? 0 : 75 }}
-      aria-label="Close dialog"
-      tabindex="-1"
-      onclick={() => closeOnOverlay && onClose()}
-    ></button>
+  <div class={`fixed inset-0 z-50 flex ${layoutClass}`}>
+    {#if variant === "modal"}
+      <button
+        type="button"
+        class={`absolute inset-0 ${overlayClass}`}
+        transition:fly={{ duration: prefersReducedMotion ? 0 : 75 }}
+        aria-label="Close dialog"
+        tabindex="-1"
+        onclick={() => closeOnOverlay && onClose()}
+      ></button>
+    {:else}
+      <div
+        class={`absolute inset-0 ${overlayClass}`}
+        transition:fly={{ duration: prefersReducedMotion ? 0 : 75 }}
+        aria-hidden="true"
+      ></div>
+    {/if}
     <div
       bind:this={panel}
-      class={`relative z-10 flex max-h-[calc(100vh-44px)] min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-surface text-text shadow-2xl outline-none ${sizeClass[size]}`}
+      class={`relative z-10 flex max-h-[calc(100vh-44px)] min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-surface text-text shadow-2xl outline-none ${panelClass}`}
       transition:scale={{ duration: prefersReducedMotion ? 0 : 75, start: 0.97 }}
       role="dialog"
-      aria-modal="true"
+      data-dialog-variant={variant}
+      aria-modal={variant === "modal" ? "true" : undefined}
       aria-labelledby={titleId}
       aria-describedby={description ? descriptionId : undefined}
       tabindex="-1"
     >
-      <header class="border-b border-border px-5 py-4">
-        <h2 id={titleId} class="text-sm font-semibold">{title}</h2>
-        {#if description}
-          <p id={descriptionId} class="mt-1 text-xs leading-5 text-text-subtle">{description}</p>
-        {/if}
+      <header class={`border-b border-border px-5 ${variant === "panel" ? "py-3.5" : "py-4"}`}>
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0 flex-1">
+            <h2 id={titleId} class="text-sm font-semibold">{title}</h2>
+            {#if description}
+              <p id={descriptionId} class="mt-1 text-xs leading-5 text-text-subtle">{description}</p>
+            {/if}
+          </div>
+
+          {#if variant === "panel"}
+            <IconButton
+              label="Close panel"
+              variant="ghost"
+              class="h-7 w-7 shrink-0 rounded-sm border border-transparent"
+              data-dialog-dismiss
+              onclick={() => onClose()}
+            >
+              <svg viewBox="0 0 16 16" class="h-3.5 w-3.5" aria-hidden="true">
+                <path d="M4 4L12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                <path d="M12 4L4 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+              </svg>
+            </IconButton>
+          {/if}
+        </div>
       </header>
 
       <div class="min-h-0 flex-1 overflow-hidden">

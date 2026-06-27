@@ -10,6 +10,7 @@
   import TitleBar from "$lib/components/TitleBar.svelte";
   import WelcomeScreen from "$lib/components/WelcomeScreen.svelte";
   import Button from "$lib/components/ui/Button.svelte";
+  import Toast from "$lib/components/ui/Toast.svelte";
   import { runtimeStore } from "$lib/stores/runtime.svelte";
   import { setWindowTitle } from "$lib/tauri/client";
   import { createShortcutRegistry } from "$lib/shortcuts/registry";
@@ -235,40 +236,54 @@
       </section>
 {/snippet}
 
-<AppShell {processList}>
-          {#if selection?.kind === "terminal" && selectedTerminal}
-            <TerminalPane
-              terminalId={selectedTerminal.terminalId}
-              output={runtimeStore.terminalOutput[selectedTerminal.terminalId] ?? ""}
-              onInput={(data) => runtimeStore.writeToTerminal(data)}
-              onResize={(cols, rows) => runtimeStore.resizeSelectedTerminal(cols, rows)}
-              onOpenTerminal={openTerminal}
+{#if configOpen}
+  <main class="h-full min-h-0 overflow-hidden bg-canvas text-text" style="padding-top: 38px">
+    <ConfigEditor
+      open={configOpen}
+      mode="page"
+      {project}
+      onClose={() => {
+        configOpen = false;
+      }}
+    />
+    <Toast />
+  </main>
+{:else}
+  <AppShell {processList}>
+            {#if selection?.kind === "terminal" && selectedTerminal}
+              <TerminalPane
+                terminalId={selectedTerminal.terminalId}
+                output={runtimeStore.terminalOutput[selectedTerminal.terminalId] ?? ""}
+                onInput={(data) => runtimeStore.writeToTerminal(data)}
+                onResize={(cols, rows) => runtimeStore.resizeSelectedTerminal(cols, rows)}
+                onOpenTerminal={openTerminal}
+              />
+          {:else if selection?.kind === "process" && session}
+            <LogViewer
+              logs={runtimeStore.logsForSelectedProcess()}
+              processName={selectedProcess?.name ?? null}
+              truncatedCount={runtimeStore.truncatedLogCountForSelectedProcess()}
+              onClear={() => runtimeStore.clearSelectedProcessLogs()}
+              onActions={(actions) => (runtimeStore.logActions = actions)}
             />
-        {:else if selection?.kind === "process" && session}
-          <LogViewer
-            logs={runtimeStore.logsForSelectedProcess()}
-            processName={selectedProcess?.name ?? null}
-            truncatedCount={runtimeStore.truncatedLogCountForSelectedProcess()}
-            onClear={() => runtimeStore.clearSelectedProcessLogs()}
-            onActions={(actions) => (runtimeStore.logActions = actions)}
-          />
-        {:else if !runtimeStore.projectId && !session}
-          <WelcomeScreen />
-        {:else}
-          <div class="grid h-full place-items-center px-6 text-center">
-            <div class="max-w-sm">
-              <div class="text-sm font-semibold text-text">
-                {session ? "Select a process or terminal" : "No process is running"}
+          {:else if !runtimeStore.projectId && !session}
+            <WelcomeScreen />
+          {:else}
+            <div class="grid h-full place-items-center px-6 text-center">
+              <div class="max-w-sm">
+                <div class="text-sm font-semibold text-text">
+                  {session ? "Select a process or terminal" : "No process is running"}
+                </div>
+                <p class="mt-2 text-sm leading-6 text-text-subtle">
+                  {session
+                    ? "Choose an item in the sidebar to view its logs or terminal."
+                    : "Start the current project to populate the process list, or open a terminal from the project menu."}
+                </p>
               </div>
-              <p class="mt-2 text-sm leading-6 text-text-subtle">
-                {session
-                  ? "Choose an item in the sidebar to view its logs or terminal."
-                  : "Start the current project to populate the process list, or open a terminal from the project menu."}
-              </p>
             </div>
-          </div>
-        {/if}
-</AppShell>
+          {/if}
+  </AppShell>
+{/if}
 
 <ProjectSettingsDialog
   open={detailsOpen}
@@ -286,10 +301,3 @@
   launchLocked={runtimeStore.launchLocked}
 />
 
-<ConfigEditor
-  open={configOpen}
-  {project}
-  onClose={() => {
-    configOpen = false;
-  }}
-/>

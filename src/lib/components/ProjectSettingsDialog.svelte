@@ -92,6 +92,7 @@
   {open}
   title={project ? "Edit project" : "Register project"}
   size="md"
+  variant="panel"
   onClose={closeDialog}
   closeOnOverlay={!saving && !removing}
 >

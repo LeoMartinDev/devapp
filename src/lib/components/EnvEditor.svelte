@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { EnvRow } from "$lib/config/editorModel";
   import Button from "$lib/components/ui/Button.svelte";
+  import IconButton from "$lib/components/ui/IconButton.svelte";
+  import TextField from "$lib/components/ui/TextField.svelte";
 
   type Props = {
     rows: EnvRow[];
@@ -12,47 +14,72 @@
   };
 
   let { rows = $bindable(), processId, issueFor, onAdd, onRemove, onFieldBlur }: Props = $props();
+
+  const errorFieldClass = "border-danger focus:border-danger";
+  const envScopeLabel = (value: string | undefined) => (value ? "Process" : "Global");
 </script>
 
-<section class="grid gap-3">
-  <div class="flex items-center justify-between">
-    <h2 class="text-sm font-semibold text-text">Environment variables</h2>
+<section class="grid gap-3 border-t border-border/70 pt-5">
+  <div class="flex items-start justify-between gap-3">
+    <div>
+      <h3 class="text-sm font-semibold text-text">Environment variables</h3>
+      {#if processId}
+        <p class="mt-1 text-xs leading-5 text-text-subtle">Injected into this process.</p>
+      {/if}
+    </div>
     <Button size="sm" onclick={onAdd}>Add variable</Button>
   </div>
-  <div class="grid gap-2">
+
+  <div class="grid gap-2.5">
     {#if rows.length === 0}
-      <div class="rounded-md border border-dashed border-border px-3 py-3 text-sm text-text-subtle">
-        No global variables.
+      <div class="px-1 text-sm text-text-subtle">
+        {processId ? "No process variables." : "No global variables."}
       </div>
     {:else}
-      {#each rows as row (row.id)}
+      {#each rows as row, index (row.id)}
         {@const envIssueKey = processId ? `process.${processId}.env.${row.id}.key` : `env.${row.id}.key`}
         {@const keyError = issueFor(envIssueKey)}
-        <div class="grid grid-cols-1 gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto]">
-          <label class="grid gap-1">
-            <input
-              class={`h-9 rounded-md border px-3 text-sm outline-none transition-colors duration-75 ${
-                keyError
-                  ? "border-danger focus:border-danger"
-                  : "border-border bg-surface-raised focus:border-accent"
-              }`}
+        {@const keyErrorId = `env-error-${row.id}-key`}
+        {@const rowNumber = index + 1}
+        {@const scopeLabel = envScopeLabel(processId)}
+        <div class="grid grid-cols-1 gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto] md:items-start">
+          <div class="grid gap-1">
+            <TextField
+              aria-label={`${scopeLabel} environment variable key ${rowNumber}`}
+              aria-invalid={keyError ? "true" : undefined}
+              aria-describedby={keyError ? keyErrorId : undefined}
+              class={keyError ? errorFieldClass : ""}
               placeholder="KEY"
               bind:value={row.key}
               onblur={() => onFieldBlur?.(processId ? `process.${processId}.env.${row.id}.key` : `env.${row.id}.key`)}
             />
             {#if keyError}
-              <span class="text-xs text-danger">{keyError}</span>
+              <span id={keyErrorId} class="text-xs text-danger">{keyError}</span>
             {/if}
-          </label>
-          <input
-            class="h-9 rounded-md border border-border bg-surface-raised px-3 text-sm outline-none transition-colors duration-75 focus:border-accent"
+          </div>
+          <TextField
+            aria-label={`${scopeLabel} environment variable value ${rowNumber}`}
             placeholder="value"
             bind:value={row.value}
             onblur={() => onFieldBlur?.(processId ? `process.${processId}.env.${row.id}.value` : `env.${row.id}.value`)}
           />
-          <Button variant="danger" onclick={() => onRemove(row.id)}>
-            Remove
-          </Button>
+          <IconButton
+            label={`Remove ${scopeLabel.toLowerCase()} environment variable ${rowNumber}`}
+            variant="ghost"
+            size="sm"
+            onclick={() => onRemove(row.id)}
+            class="mt-1"
+          >
+            <svg viewBox="0 0 16 16" class="h-3.5 w-3.5" aria-hidden="true">
+              <path d="M6 2.75h4M3.75 4.5h8.5M6.5 6.5v5M9.5 6.5v5M5.5 2.75l.35-.6A.75.75 0 0 1 6.5 1.75h3a.75.75 0 0 1 .65.4l.35.6m-6 1.75V12a1.25 1.25 0 0 0 1.25 1.25h4.5A1.25 1.25 0 0 0 11.5 12V4.5"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </IconButton>
         </div>
       {/each}
     {/if}

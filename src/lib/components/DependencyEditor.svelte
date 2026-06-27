@@ -2,6 +2,8 @@
   import type { DependencyCondition } from "$lib/types";
   import type { ProcessForm } from "$lib/config/editorModel";
   import Button from "$lib/components/ui/Button.svelte";
+  import IconButton from "$lib/components/ui/IconButton.svelte";
+  import SelectField from "$lib/components/ui/SelectField.svelte";
 
   type Props = {
     process: ProcessForm;
@@ -20,52 +22,78 @@
     onRemove,
     onFieldBlur,
   }: Props = $props();
+
+  const errorFieldClass = "border-danger focus:border-danger";
 </script>
 
-<div class="grid gap-2">
-  <div class="flex items-center justify-between">
-    <span class="text-sm text-text-muted">Dependencies</span>
+<section class="grid gap-3 border-t border-border/70 pt-5">
+  <div class="flex items-start justify-between gap-3">
+    <div>
+      <h3 class="text-sm font-semibold text-text">Dependencies</h3>
+      <p class="mt-1 text-xs leading-5 text-text-subtle">Process launch order for the selected node.</p>
+    </div>
     <Button size="sm" onclick={() => onAdd(process)}>Add dependency</Button>
   </div>
+
   {#if process.dependencies.length === 0}
-    <div class="rounded-md border border-dashed border-border px-3 py-2 text-sm text-text-subtle">
+    <div class="px-1 text-sm text-text-subtle">
       Starts without dependencies.
     </div>
   {:else}
-    {#each process.dependencies as dependency (dependency.id)}
-      {@const depError = dependencyIssue(process, dependency.id)}
-      <div class="grid gap-1">
-        <div class="grid grid-cols-1 gap-2 md:grid-cols-[minmax(0,1fr)_150px_auto]">
-          <select
-            class={`h-9 rounded-md border px-3 text-sm outline-none transition-colors duration-75 ${
-              depError
-                ? "border-danger focus:border-danger"
-                : "border-border bg-surface-raised focus:border-accent"
-            }`}
-            bind:value={dependency.processName}
-            onblur={() => onFieldBlur?.(`process.${process.id}.dependency.${dependency.id}`)}
-          >
-            <option value="">Select process</option>
-            {#each processes.filter((candidate) => candidate.id !== process.id) as candidate}
-              <option value={candidate.name}>{candidate.name}</option>
-            {/each}
-          </select>
-          <select
-            class="h-9 rounded-md border border-border bg-surface-raised px-3 text-sm outline-none transition-colors duration-75 focus:border-accent"
-            bind:value={dependency.condition}
-            onblur={() => onFieldBlur?.(`process.${process.id}.dependency.${dependency.id}`)}
-          >
-            <option value={"ready" satisfies DependencyCondition}>Ready</option>
-            <option value={"success" satisfies DependencyCondition}>Success</option>
-          </select>
-          <Button variant="danger" onclick={() => onRemove(process, dependency.id)}>
-            Remove
-          </Button>
+    <div class="grid gap-2.5">
+      {#each process.dependencies as dependency, index (dependency.id)}
+        {@const depError = dependencyIssue(process, dependency.id)}
+        {@const depErrorId = `dependency-error-${process.id}-${dependency.id}`}
+        {@const dependencyIndex = index + 1}
+        <div class="grid gap-1">
+          <div class="grid grid-cols-1 gap-2 md:grid-cols-[minmax(0,1fr)_150px_auto] md:items-start">
+            <SelectField
+              aria-label={`Dependency process ${dependencyIndex}`}
+              aria-invalid={depError ? "true" : undefined}
+              aria-describedby={depError ? depErrorId : undefined}
+              class={depError ? errorFieldClass : ""}
+              options={[
+                { value: "", label: "Select process" },
+                ...processes.filter((candidate) => candidate.id !== process.id).map((candidate) => ({
+                  value: candidate.name,
+                  label: candidate.name,
+                })),
+              ]}
+              bind:value={dependency.processName}
+              onblur={() => onFieldBlur?.(`process.${process.id}.dependency.${dependency.id}`)}
+            />
+            <SelectField
+              aria-label={`Dependency condition ${dependencyIndex}`}
+              options={[
+                { value: "ready" satisfies DependencyCondition, label: "Ready" },
+                { value: "success" satisfies DependencyCondition, label: "Success" },
+              ]}
+              bind:value={dependency.condition}
+              onblur={() => onFieldBlur?.(`process.${process.id}.dependency.${dependency.id}`)}
+            />
+            <IconButton
+              label={`Remove dependency ${dependencyIndex}`}
+              variant="ghost"
+              size="sm"
+              onclick={() => onRemove(process, dependency.id)}
+              class="mt-1"
+            >
+              <svg viewBox="0 0 16 16" class="h-3.5 w-3.5" aria-hidden="true">
+                <path d="M6 2.75h4M3.75 4.5h8.5M6.5 6.5v5M9.5 6.5v5M5.5 2.75l.35-.6A.75.75 0 0 1 6.5 1.75h3a.75.75 0 0 1 .65.4l.35.6m-6 1.75V12a1.25 1.25 0 0 0 1.25 1.25h4.5A1.25 1.25 0 0 0 11.5 12V4.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </IconButton>
+          </div>
+          {#if depError}
+            <span id={depErrorId} class="text-xs text-danger">{depError}</span>
+          {/if}
         </div>
-        {#if depError}
-          <span class="text-xs text-danger">{depError}</span>
-        {/if}
-      </div>
-    {/each}
+      {/each}
+    </div>
   {/if}
-</div>
+</section>
