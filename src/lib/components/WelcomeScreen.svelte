@@ -30,7 +30,7 @@
           {#each recentProjects as project}
             <button
               type="button"
-              class="w-full rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-surface-hover"
+              class="w-full rounded-md px-3 py-2 text-left text-sm transition-colors duration-75 hover:bg-surface-hover"
               onclick={() => {
                 document.dispatchEvent(
                   new CustomEvent("devapp:open-edit-dialog", { detail: project }),

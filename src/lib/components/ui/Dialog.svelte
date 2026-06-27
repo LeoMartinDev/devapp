@@ -121,8 +121,8 @@
   <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
     <button
       type="button"
-      class="absolute inset-0 bg-black/60 backdrop-blur-sm"
-      transition:fly={{ duration: prefersReducedMotion ? 0 : 150 }}
+      class="absolute inset-0 bg-black/40"
+      transition:fly={{ duration: prefersReducedMotion ? 0 : 75 }}
       aria-label="Close dialog"
       tabindex="-1"
       onclick={() => closeOnOverlay && onClose()}
@@ -130,7 +130,7 @@
     <div
       bind:this={panel}
       class={`relative z-10 flex max-h-[calc(100vh-44px)] min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-surface text-text shadow-2xl outline-none ${sizeClass[size]}`}
-      transition:scale={{ duration: prefersReducedMotion ? 0 : 150, start: 0.95 }}
+      transition:scale={{ duration: prefersReducedMotion ? 0 : 75, start: 0.97 }}
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}

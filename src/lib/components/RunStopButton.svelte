@@ -11,9 +11,9 @@
   let { active, busy = false, disabled = false, compact = false, onRun, onStop }: Props = $props();
 
   const runClass =
-    "inline-flex items-center justify-center border border-emerald-500/50 bg-emerald-500/10 text-emerald-500 transition-colors hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:border-border disabled:text-text-subtle disabled:bg-transparent";
+    "inline-flex items-center justify-center border border-emerald-500/50 bg-emerald-500/10 text-emerald-500 transition-colors duration-75 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:border-border disabled:text-text-subtle disabled:bg-transparent";
   const stopClass =
-    "inline-flex items-center justify-center border border-danger/30 bg-danger/10 text-danger transition-colors hover:bg-danger/20 disabled:cursor-not-allowed disabled:opacity-55";
+    "inline-flex items-center justify-center border border-danger/30 bg-danger/10 text-danger transition-colors duration-75 hover:bg-danger/20 disabled:cursor-not-allowed disabled:opacity-55";
   const busyClass =
     "inline-flex items-center justify-center border border-warning/30 bg-warning/10 text-warning cursor-not-allowed";
   const compactClass = "h-4 w-4 rounded-[4px] p-0";

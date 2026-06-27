@@ -247,7 +247,7 @@
         type="text"
         placeholder="Search logs"
         spellcheck="false"
-        class="h-6 w-full rounded-md border border-border bg-surface-raised pl-6 pr-2 text-[11px] text-text outline-none transition-colors placeholder:text-[10px] placeholder:text-text-subtle focus:border-accent"
+        class="h-6 w-full rounded-md border border-border bg-surface-raised pl-6 pr-2 text-[11px] text-text outline-none transition-colors duration-75 placeholder:text-[10px] placeholder:text-text-subtle focus:border-accent"
       />
       {#if matchCount !== null}
         <span class="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] text-text-subtle">
@@ -288,7 +288,7 @@
       <button
         type="button"
         tabindex="-1"
-        class="grid h-6 w-6 place-items-center rounded-md transition-colors {autoScroll ? 'bg-accent/15 text-accent' : 'text-text-subtle hover:bg-surface-hover hover:text-text'}"
+        class="grid h-6 w-6 place-items-center rounded-md transition-colors duration-75 {autoScroll ? 'bg-accent/15 text-accent' : 'text-text-subtle hover:bg-surface-hover hover:text-text'}"
         onclick={() => (autoScroll = !autoScroll)}
         aria-pressed={autoScroll}
         aria-label={autoScroll ? "Auto-scroll on" : "Auto-scroll off"}
@@ -305,7 +305,7 @@
       <button
         type="button"
         tabindex="-1"
-        class="grid h-6 w-6 place-items-center rounded-md text-text-subtle transition-colors hover:bg-surface-hover hover:text-text"
+        class="grid h-6 w-6 place-items-center rounded-md text-text-subtle transition-colors duration-75 hover:bg-surface-hover hover:text-text"
         onclick={togglePaused}
         aria-pressed={paused}
         aria-label={paused ? "Resume live log view" : "Pause live log view"}
@@ -326,7 +326,7 @@
       <button
         type="button"
         tabindex="-1"
-        class="grid h-6 w-6 place-items-center rounded-md text-text-subtle transition-colors hover:bg-surface-hover hover:text-danger"
+        class="grid h-6 w-6 place-items-center rounded-md text-text-subtle transition-colors duration-75 hover:bg-surface-hover hover:text-danger"
         onclick={clearLogs}
         aria-label="Clear logs"
         title="Clear logs"
@@ -358,7 +358,7 @@
     </div>
   {/if}
 
-  <div bind:this={viewport} onscroll={handleScroll} class="min-h-0 flex-1 overflow-auto font-mono text-[12px] leading-[1.45]">
+  <div bind:this={viewport} onscroll={handleScroll} data-native-selectable="logs" class="min-h-0 flex-1 overflow-auto font-mono text-[12px] leading-[1.45]">
     {#if filteredLogs.length === 0}
       <div class="px-3 py-2 text-text-subtle">{query ? "No matching lines" : "No log line"}</div>
     {:else}

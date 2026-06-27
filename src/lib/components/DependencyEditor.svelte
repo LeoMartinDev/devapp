@@ -37,7 +37,7 @@
       <div class="grid gap-1">
         <div class="grid grid-cols-1 gap-2 md:grid-cols-[minmax(0,1fr)_150px_auto]">
           <select
-            class={`h-9 rounded-md border px-3 text-sm outline-none transition-colors ${
+            class={`h-9 rounded-md border px-3 text-sm outline-none transition-colors duration-75 ${
               depError
                 ? "border-danger focus:border-danger"
                 : "border-border bg-surface-raised focus:border-accent"
@@ -51,7 +51,7 @@
             {/each}
           </select>
           <select
-            class="h-9 rounded-md border border-border bg-surface-raised px-3 text-sm outline-none transition-colors focus:border-accent"
+            class="h-9 rounded-md border border-border bg-surface-raised px-3 text-sm outline-none transition-colors duration-75 focus:border-accent"
             bind:value={dependency.condition}
             onblur={() => onFieldBlur?.(`process.${process.id}.dependency.${dependency.id}`)}
           >

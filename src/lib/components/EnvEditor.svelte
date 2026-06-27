@@ -31,7 +31,7 @@
         <div class="grid grid-cols-1 gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto]">
           <label class="grid gap-1">
             <input
-              class={`h-9 rounded-md border px-3 text-sm outline-none transition-colors ${
+              class={`h-9 rounded-md border px-3 text-sm outline-none transition-colors duration-75 ${
                 keyError
                   ? "border-danger focus:border-danger"
                   : "border-border bg-surface-raised focus:border-accent"
@@ -45,7 +45,7 @@
             {/if}
           </label>
           <input
-            class="h-9 rounded-md border border-border bg-surface-raised px-3 text-sm outline-none transition-colors focus:border-accent"
+            class="h-9 rounded-md border border-border bg-surface-raised px-3 text-sm outline-none transition-colors duration-75 focus:border-accent"
             placeholder="value"
             bind:value={row.value}
             onblur={() => onFieldBlur?.(processId ? `process.${processId}.env.${row.id}.value` : `env.${row.id}.value`)}

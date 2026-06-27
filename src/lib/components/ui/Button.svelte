@@ -42,7 +42,7 @@
   {...rest}
   {type}
   {disabled}
-  class={`inline-flex items-center justify-center gap-1.5 rounded-md transition-colors disabled:cursor-not-allowed ${variantClass[variant]} ${sizeClass[size]} ${className}`}
+  class={`inline-flex items-center justify-center gap-1.5 rounded-md transition-colors duration-75 disabled:cursor-not-allowed ${variantClass[variant]} ${sizeClass[size]} ${className}`}
 >
   {@render children?.()}
 </button>

@@ -30,7 +30,7 @@
   {/if}
   <select
     {...rest}
-    class={`h-9 w-full rounded-md border bg-surface-raised px-3 text-sm text-text outline-none transition-colors ${
+    class={`h-9 w-full rounded-md border bg-surface-raised px-3 text-sm text-text outline-none transition-colors duration-75 ${
       error ? "border-danger focus:border-danger" : "border-border focus:border-accent"
     } ${className}`}
     bind:value

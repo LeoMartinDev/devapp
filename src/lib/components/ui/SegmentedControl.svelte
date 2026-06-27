@@ -18,7 +18,7 @@
   {#each options as option (option.value)}
     <button
       type="button"
-      class={`h-7 rounded px-3 text-sm transition-colors ${
+      class={`h-7 rounded px-3 text-sm transition-colors duration-75 ${
         value === option.value ? "bg-surface-hover text-text" : "text-text-subtle hover:text-text-muted"
       }`}
       aria-pressed={value === option.value}

@@ -36,7 +36,7 @@
   {disabled}
   aria-label={label}
   title={title ?? label}
-  class={`grid h-8 w-8 place-items-center rounded-md transition-colors disabled:cursor-not-allowed ${variantClass[variant]} ${className}`}
+  class={`grid h-8 w-8 place-items-center rounded-md transition-colors duration-75 disabled:cursor-not-allowed ${variantClass[variant]} ${className}`}
 >
   {@render children?.()}
 </button>

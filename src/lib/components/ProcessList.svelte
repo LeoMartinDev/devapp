@@ -82,7 +82,7 @@
       {@const action = rowAction(process)}
       {@const restartable = !busy && (action === "stop" || action === "start")}
       <div
-        class={`group relative flex items-center gap-2.5 rounded-md px-3 py-1.5 transition-colors ${
+        class={`group relative flex items-center gap-2.5 rounded-md px-3 py-1.5 transition-colors duration-75 ${
           selected ? "bg-surface-raised" : "hover:bg-surface-hover"
         }`}
       >
@@ -102,8 +102,8 @@
             </svg>
           {/if}
           <span class="min-w-0">
-            <span class="block truncate text-[13px] font-medium text-text">{process.name}</span>
-            <span class="block truncate text-[11px] text-text-subtle">{process.status}</span>
+            <span class="block truncate select-none text-[13px] font-medium text-text">{process.name}</span>
+            <span class="block truncate select-none text-[11px] text-text-subtle">{process.status}</span>
           </span>
         </button>
 
@@ -114,7 +114,7 @@
             {@const danger = action === "stop"}
             <button
               type="button"
-              class={`grid h-6 w-6 place-items-center rounded text-text-subtle transition-colors hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-40 ${danger ? "hover:bg-danger/10 hover:text-danger" : "hover:text-text"}`}
+              class={`grid h-6 w-6 place-items-center rounded text-text-subtle transition-colors duration-75 hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-40 ${danger ? "hover:bg-danger/10 hover:text-danger" : "hover:text-text"}`}
               disabled={!actionEnabled(process)}
               aria-label={`${action === "stop" ? "Stop" : "Start"} ${process.name}`}
               title={`${action === "stop" ? "Stop" : "Start"} ${process.name}`}
@@ -141,7 +141,7 @@
             </button>
             <button
               type="button"
-              class="grid h-6 w-6 place-items-center rounded text-text-subtle transition-colors hover:bg-surface-hover hover:text-text disabled:cursor-not-allowed disabled:opacity-40"
+              class="grid h-6 w-6 place-items-center rounded text-text-subtle transition-colors duration-75 hover:bg-surface-hover hover:text-text disabled:cursor-not-allowed disabled:opacity-40"
               disabled={!restartable}
               aria-label={`Restart ${process.name}`}
               title={`Restart ${process.name}`}
@@ -159,7 +159,7 @@
           {:else if process.kind !== "task"}
             <button
               type="button"
-              class="grid h-6 w-6 place-items-center rounded text-text-subtle transition-colors hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-40"
+              class="grid h-6 w-6 place-items-center rounded text-text-subtle transition-colors duration-75 hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-40"
               disabled
               aria-label={`${process.name}`}
               title={`${process.name}`}
@@ -176,7 +176,7 @@
     {#each terminals.filter((t) => t.isOpen) as terminal (terminal.terminalId)}
       {@const selected = terminal.terminalId === selectedTerminalId}
       <div
-        class={`group relative flex items-center gap-2.5 rounded-md px-3 py-1.5 transition-colors ${
+        class={`group relative flex items-center gap-2.5 rounded-md px-3 py-1.5 transition-colors duration-75 ${
           selected ? "bg-surface-raised" : "hover:bg-surface-hover"
         }`}
       >
@@ -191,8 +191,8 @@
             <line x1="12" y1="19" x2="20" y2="19" />
           </svg>
           <span class="min-w-0">
-            <span class="block truncate text-[13px] font-medium text-text">{terminal.title}</span>
-            <span class="block truncate text-[11px] text-text-subtle">{terminal.cwd}</span>
+            <span class="block truncate select-none text-[13px] font-medium text-text">{terminal.title}</span>
+            <span class="block truncate select-none text-[11px] text-text-subtle">{terminal.cwd}</span>
           </span>
         </button>
 
@@ -201,7 +201,7 @@
         >
           <button
             type="button"
-            class="grid h-6 w-6 place-items-center rounded text-text-subtle transition-colors hover:bg-danger/10 hover:text-danger disabled:cursor-not-allowed disabled:opacity-40"
+            class="grid h-6 w-6 place-items-center rounded text-text-subtle transition-colors duration-75 hover:bg-danger/10 hover:text-danger disabled:cursor-not-allowed disabled:opacity-40"
             aria-label={`Close ${terminal.title}`}
             title={`Close ${terminal.title}`}
             onclick={(event) => {

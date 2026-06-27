@@ -63,7 +63,7 @@
     aria-expanded={open}
     aria-label={label}
     title={label}
-    class="grid h-8 w-8 place-items-center rounded-md text-text-muted transition-colors hover:bg-surface-hover hover:text-text disabled:cursor-not-allowed disabled:opacity-55"
+    class="grid h-8 w-8 place-items-center rounded-md text-text-muted transition-colors duration-75 hover:bg-surface-hover hover:text-text disabled:cursor-not-allowed disabled:opacity-55"
     onclick={() => (open = !open)}
   >
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -76,14 +76,14 @@
     <div
       role="menu"
       aria-label={label}
-      class="absolute right-0 top-full z-30 mt-1 min-w-[180px] overflow-hidden rounded-md border border-border bg-surface-raised py-1 shadow-2xl"
+      class="absolute right-0 top-full z-30 mt-1 min-w-[180px] overflow-hidden rounded-md border border-border bg-surface-raised py-1 shadow-2xl select-none"
     >
       {#each items as item, i (i)}
         <button
           type="button"
           role="menuitem"
           disabled={item.disabled}
-          class={`flex w-full items-center px-3 py-1.5 text-left text-[13px] transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+          class={`flex w-full items-center px-3 py-1.5 text-left text-[13px] transition-colors duration-75 disabled:cursor-not-allowed disabled:opacity-40 ${
             item.disabled
               ? ""
               : item.danger

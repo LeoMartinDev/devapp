@@ -117,6 +117,7 @@
 <section class="flex h-full min-h-0 flex-col bg-canvas">
   <div
     bind:this={host}
+    data-native-selectable="terminal"
     class={`min-h-0 flex-1 overflow-hidden px-2 py-2 ${terminalId ? "" : "hidden"}`}
   ></div>
   {#if !terminalId}
@@ -129,7 +130,7 @@
       <div class="text-sm text-text-subtle">No terminal open</div>
       <button
         type="button"
-        class="rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-text transition-colors hover:bg-surface-hover hover:border-text-muted"
+        class="rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-text transition-colors duration-75 hover:bg-surface-hover hover:border-text-muted"
         onclick={onOpenTerminal}
       >
         Open terminal

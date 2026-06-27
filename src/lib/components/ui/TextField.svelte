@@ -21,7 +21,7 @@
   }: Props = $props();
 
   const inputClass = $derived(
-    `h-9 w-full rounded-md border bg-surface-raised px-3 text-sm text-text outline-none transition-colors placeholder:text-text-subtle ${
+    `h-9 w-full rounded-md border bg-surface-raised px-3 text-sm text-text outline-none transition-colors duration-75 placeholder:text-text-subtle ${
       error ? "border-danger focus:border-danger" : "border-border focus:border-accent"
     } ${monospace ? "font-mono text-[13px]" : ""} ${className}`,
   );

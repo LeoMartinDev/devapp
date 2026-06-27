@@ -44,7 +44,7 @@
     {#each processes as process (process.id)}
       <button
         type="button"
-        class={`flex min-w-48 items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors lg:mb-1 lg:w-full lg:min-w-0 ${
+        class={`flex min-w-48 items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors duration-75 lg:mb-1 lg:w-full lg:min-w-0 ${
           process.id === selectedProcess?.id
             ? "bg-surface-raised text-text"
             : "text-text-subtle hover:bg-surface-hover hover:text-text"

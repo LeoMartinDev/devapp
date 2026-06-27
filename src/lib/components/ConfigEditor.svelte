@@ -405,7 +405,7 @@ import { runtimeStore } from "$lib/stores/runtime.svelte";
                 </Button>
               </div>
               {#if showPreview}
-                <pre class="max-h-72 overflow-auto rounded-md border border-border bg-surface-raised/70 p-3 font-mono text-xs leading-5 text-text-muted">{previewYaml}</pre>
+                <pre data-native-selectable="yaml-preview" class="max-h-72 overflow-auto rounded-md border border-border bg-surface-raised/70 p-3 font-mono text-xs leading-5 text-text-muted">{previewYaml}</pre>
               {/if}
             </section>
           </div>
