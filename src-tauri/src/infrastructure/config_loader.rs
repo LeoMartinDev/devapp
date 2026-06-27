@@ -85,6 +85,21 @@ pub fn find_project_config(base_dir: &Path) -> Result<Option<PathBuf>, AppError>
     }
 }
 
+/// Walk up from the current working directory to the filesystem root
+/// looking for `devapp.yml`. Returns the first match, or `None`.
+pub fn find_config_in_cwd_or_parents() -> Option<PathBuf> {
+    let mut current = std::env::current_dir().ok()?;
+    loop {
+        let candidate = current.join(PROJECT_CONFIG_FILE_NAME);
+        if candidate.is_file() {
+            return Some(candidate);
+        }
+        if !current.pop() {
+            return None;
+        }
+    }
+}
+
 pub fn validate_graph(config: &DevappConfig) -> Result<(), AppError> {
     if config.processes.is_empty() {
         return Err(AppError::validation_with_code(
@@ -425,6 +440,66 @@ processes:
             Some(config_path)
         );
 
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn finds_config_in_cwd() {
+        let root = std::env::temp_dir().join(format!(
+            "devapp-config-loader-cwd-{}",
+            uuid::Uuid::new_v4()
+        ));
+        fs::create_dir_all(&root).expect("create temp dir");
+        let config_path = root.join(PROJECT_CONFIG_FILE_NAME);
+        fs::write(&config_path, "version: 1\nprocesses: {}\n").expect("write config");
+
+        let original = std::env::current_dir().expect("get cwd");
+        std::env::set_current_dir(&root).expect("set cwd");
+        let result = find_config_in_cwd_or_parents();
+        std::env::set_current_dir(original).expect("restore cwd");
+
+        let found = result.expect("should find config");
+        assert!(found.is_file());
+        assert_eq!(found.file_name().unwrap(), PROJECT_CONFIG_FILE_NAME);
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn finds_config_in_parent_directory() {
+        let root = std::env::temp_dir().join(format!(
+            "devapp-config-loader-parent-{}",
+            uuid::Uuid::new_v4()
+        ));
+        let child = root.join("child");
+        fs::create_dir_all(&child).expect("create temp dirs");
+        let config_path = root.join(PROJECT_CONFIG_FILE_NAME);
+        fs::write(&config_path, "version: 1\nprocesses: {}\n").expect("write config");
+
+        let original = std::env::current_dir().expect("get cwd");
+        std::env::set_current_dir(&child).expect("set cwd");
+        let result = find_config_in_cwd_or_parents();
+        std::env::set_current_dir(original).expect("restore cwd");
+
+        let found = result.expect("should find config in parent");
+        assert!(found.is_file());
+        assert_eq!(found.file_name().unwrap(), PROJECT_CONFIG_FILE_NAME);
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn returns_none_when_no_config_found() {
+        let root = std::env::temp_dir().join(format!(
+            "devapp-config-loader-none-{}",
+            uuid::Uuid::new_v4()
+        ));
+        fs::create_dir_all(&root).expect("create temp dir");
+
+        let original = std::env::current_dir().expect("get cwd");
+        std::env::set_current_dir(&root).expect("set cwd");
+        let result = find_config_in_cwd_or_parents();
+        std::env::set_current_dir(original).expect("restore cwd");
+
+        assert_eq!(result, None);
         let _ = fs::remove_dir_all(root);
     }
 }
