@@ -55,7 +55,7 @@ pub fn run() {
                         let mut launch_project_id = state.launch_project_id.lock().await;
                         *launch_project_id = Some(project.id);
                     } else {
-                        let config_path_display = config_path.display().to_string();
+                        let config_path_for_error = config_path.clone();
                         match state
                             .project_store
                             .lock()
@@ -71,7 +71,7 @@ pub fn run() {
                                 let mut launch_error = state.launch_error.lock().await;
                                 *launch_error = Some(format!(
                                     "Failed to load auto-detected config {}: {}",
-                                    config_path_display, error
+                                    config_path_for_error.display(), error
                                 ));
                             }
                         }

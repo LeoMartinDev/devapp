@@ -449,7 +449,7 @@ processes:
     }
 
     #[test]
-    fn finds_config_in_cwd() {
+    fn finds_config_in_given_directory() {
         let root = std::env::temp_dir().join(format!(
             "devapp-config-loader-cwd-{}",
             uuid::Uuid::new_v4()
