@@ -16,11 +16,12 @@
     "inline-flex items-center justify-center border border-danger/30 bg-danger/10 text-danger transition-colors hover:bg-danger/20 disabled:cursor-not-allowed disabled:opacity-55";
   const busyClass =
     "inline-flex items-center justify-center border border-warning/30 bg-warning/10 text-warning cursor-not-allowed";
+  const compactClass = "h-4 w-4 rounded-[4px] p-0";
 </script>
 
 {#if busy}
   <span
-    class="{busyClass} {compact ? 'h-5 w-5 rounded p-px' : 'h-8 rounded-md px-2 text-xs'}"
+    class="{busyClass} {compact ? compactClass : 'h-8 rounded-md px-2 text-xs'}"
     aria-label="Busy"
     title="Operation in progress"
   >
@@ -33,7 +34,7 @@
 {:else if active}
   <button
     type="button"
-    class="{stopClass} {compact ? 'h-5 w-5 rounded p-px' : 'h-8 rounded-md px-2 text-xs'}"
+    class="{stopClass} {compact ? compactClass : 'h-8 rounded-md px-2 text-xs'}"
     onclick={onStop}
     disabled={busy}
     aria-label="Stop current run"
@@ -47,7 +48,7 @@
 {:else}
   <button
     type="button"
-    class="{runClass} {compact ? 'h-5 w-5 rounded p-px' : 'h-8 rounded-md px-2 text-xs'}"
+    class="{runClass} {compact ? compactClass : 'h-8 rounded-md px-2 text-xs'}"
     onclick={onRun}
     disabled={disabled || busy}
     aria-label="Run project"

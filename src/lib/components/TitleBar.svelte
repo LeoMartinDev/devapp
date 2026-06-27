@@ -17,6 +17,8 @@
   const gitInfo = $derived(runtimeStore.gitInfo);
 
   const logActions = $derived(runtimeStore.logActions);
+  const projectPath = $derived(project?.baseDir ?? gitInfo?.displayPath ?? null);
+  const projectPathTitle = $derived(projectPath);
 
   function onDragStart(e: MouseEvent) {
     if ((e.target as HTMLElement).closest("[data-tauri-no-drag]")) return;
@@ -59,8 +61,10 @@
   <div class="titlebar-center" data-tauri-no-drag>
     <div class="project-chip">
       <span class="project-chip-name">{project?.name ?? "devapp"}</span>
-      {#if project?.baseDir}
-        <span class="project-chip-dir">{project.baseDir}</span>
+      {#if projectPath}
+        <span class="project-chip-dir-wrap">
+          <span class="project-chip-dir" title={projectPathTitle ?? undefined}>{projectPath}</span>
+        </span>
       {/if}
       {#if gitInfo?.branch || gitInfo?.worktree}
         <span class="project-chip-git">
@@ -68,10 +72,9 @@
             <circle cx="12" cy="12" r="3" />
             <path d="M6 6v12M18 6v12" />
           </svg>
-          {gitInfo.worktree ?? gitInfo.branch}
+          <span class="project-chip-git-label">{gitInfo.worktree ?? gitInfo.branch}</span>
         </span>
       {/if}
-      <span class="project-chip-sep"></span>
       <span class="project-chip-action">
         <RunStopButton
           active={sessionActive}
@@ -118,9 +121,10 @@
     display: grid;
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    height: 44px;
+    height: 38px;
+    min-height: 38px;
     background: var(--color-canvas, #08090b);
-    border-bottom: 1px solid var(--color-border, #ffffff14);
+    box-shadow: inset 0 -1px 0 var(--color-border, #ffffff14);
     user-select: none;
     -webkit-user-select: none;
     gap: 8px;
@@ -132,68 +136,103 @@
 
   .titlebar-center {
     display: flex;
+    align-items: center;
     justify-content: center;
+    height: 100%;
     min-width: 0;
     overflow: hidden;
   }
 
   .project-chip {
-    display: inline-flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
     align-items: center;
-    gap: 8px;
-    max-width: 100%;
-    padding: 6px 12px;
-    border-radius: 7px;
+    align-self: center;
+    column-gap: 5px;
+    position: relative;
+    width: min(360px, calc(100vw - 240px));
+    max-width: 360px;
+    height: 24px;
+    padding: 0 5px 0 8px;
+    border-radius: 5px;
     background: var(--color-surface, #0e0f12);
     border: 1px solid var(--color-border, #ffffff14);
     min-width: 0;
     line-height: 1;
+    transform: translateY(-1px);
   }
 
   .project-chip-name {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
     color: var(--color-text, #e7e9ee);
+    min-width: 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    flex-shrink: 1;
+  }
+
+  .project-chip-dir-wrap {
+    display: flex;
+    justify-content: center;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 0;
+    width: min(10.5rem, calc(100% - 12.5rem));
+    min-width: 6rem;
+    overflow: hidden;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
   }
 
   .project-chip-dir {
-    font-size: 11px;
-    color: var(--color-text-subtle, #5d636e);
+    display: block;
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--color-text-muted, #9aa0aa);
+    letter-spacing: 0.01em;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 180px;
-    flex-shrink: 1;
+    text-align: center;
+    unicode-bidi: plaintext;
   }
 
   .project-chip-git {
     display: inline-flex;
     align-items: center;
     gap: 3px;
-    padding: 1px 5px;
+    min-width: 0;
+    max-width: 6.5rem;
+    padding: 1px 4px;
     border-radius: 3px;
     background: var(--color-surface-hover, #1b1d22);
-    font-size: 11px;
+    font-size: 10px;
     color: var(--color-text-muted, #9aa0aa);
     flex-shrink: 0;
+    z-index: 1;
   }
 
-  .project-chip-sep {
-    align-self: stretch;
-    width: 1px;
-    background: var(--color-border, #ffffff14);
-    flex-shrink: 0;
+  .project-chip-git-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .project-chip-action {
     display: flex;
-    flex-shrink: 0;
-    width: 20px;
+    align-items: center;
     justify-content: center;
+    height: 100%;
+    padding-left: 4px;
+    border-left: 1px solid var(--color-border, #ffffff14);
+    z-index: 1;
   }
 
   @media (max-width: 500px) {

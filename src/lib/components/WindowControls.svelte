@@ -89,7 +89,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 46px;
+    width: 36px;
     height: 38px;
     padding: 0;
     border: none;
