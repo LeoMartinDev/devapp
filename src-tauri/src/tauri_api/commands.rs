@@ -56,6 +56,7 @@ pub struct SaveProjectConfigRequest {
 pub struct LaunchProjectInfo {
     pub project_id: Option<ProjectId>,
     pub locked: bool,
+    pub error: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -137,9 +138,11 @@ pub async fn get_launch_project(
     state: State<'_, AppState>,
 ) -> Result<LaunchProjectInfo, String> {
     let launch_project_id = state.launch_project_id.lock().await;
+    let launch_error = state.launch_error.lock().await;
     Ok(LaunchProjectInfo {
         project_id: launch_project_id.clone(),
         locked: launch_project_id.is_some(),
+        error: launch_error.clone(),
     })
 }
 
