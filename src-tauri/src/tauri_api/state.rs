@@ -15,6 +15,7 @@ pub struct AppState {
     pub project_store: Arc<Mutex<ProjectStore>>,
     pub terminal_manager: TerminalManager,
     pub launch_project_id: Arc<Mutex<Option<ProjectId>>>,
+    pub launch_error: Arc<Mutex<Option<String>>>,
 }
 
 impl AppState {
@@ -24,6 +25,7 @@ impl AppState {
             project_store: Arc::new(Mutex::new(ProjectStore::new()?)),
             terminal_manager: TerminalManager::new(),
             launch_project_id: Arc::new(Mutex::new(None)),
+            launch_error: Arc::new(Mutex::new(None)),
         })
     }
 }
