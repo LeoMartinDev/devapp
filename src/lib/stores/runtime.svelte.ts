@@ -578,6 +578,7 @@ class RuntimeStore {
     const urlProjectId = params.get("projectId");
     const launchInfo = await getLaunchProject();
     this.launchLocked = launchInfo.locked;
+    this.uiError = launchInfo.error ?? null;
 
     if (launchInfo.locked) {
       if (
