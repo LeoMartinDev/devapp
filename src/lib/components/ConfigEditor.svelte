@@ -12,7 +12,6 @@
     validateConfigForm,
     type ValidationIssue,
   } from "$lib/config/validation";
-  import ConfigProcessList from "$lib/components/ConfigProcessList.svelte";
   import DependencyEditor from "$lib/components/DependencyEditor.svelte";
   import EnvEditor from "$lib/components/EnvEditor.svelte";
   import ProcessForm from "$lib/components/ProcessForm.svelte";
@@ -90,7 +89,7 @@
       : "Select a project first.",
   );
   const panelLayoutClass =
-    "grid h-[min(760px,calc(100vh-160px))] min-h-0 grid-cols-1 grid-rows-[auto_minmax(0,1fr)] overflow-hidden lg:grid-cols-[260px_minmax(0,1fr)] lg:grid-rows-none";
+    "grid h-[min(760px,calc(100vh-160px))] min-h-0 grid-cols-1 overflow-hidden";
   const projectSourceLabel = $derived(
     !project
       ? "Auto-detect"
@@ -474,17 +473,7 @@
 
 {#snippet panelBody()}
   <div class={panelLayoutClass}>
-    <ConfigProcessList
-      projectName={project?.name ?? "No project"}
-      {processes}
-      {selectedProcess}
-      {loading}
-      disabled={loadError !== null}
-      onAdd={addProcess}
-      onSelect={(id) => (selectedProcessId = id)}
-    />
-
-    <div class="flex min-h-0 flex-col">
+    <div class="flex min-h-0 flex-col w-full">
       <div class="min-h-0 flex-1 overflow-y-auto px-5 py-5">
         {#if loading}
           <div class="text-sm text-text-subtle">Loading settings...</div>
@@ -505,10 +494,16 @@
               onRemove={removeGlobalEnvRow}
               onFieldBlur={markTouched}
             />
-            {#if selectedProcess}
-              <section class="grid gap-4">
+            
+            <div class="flex items-center justify-between border-t border-border pt-4">
+              <h3 class="text-sm font-semibold text-text">Processes</h3>
+              <Button size="sm" onclick={addProcess}>Add process</Button>
+            </div>
+
+            {#each processes as process, index (process.id)}
+              <div class="grid gap-4 border border-border/50 rounded-xl bg-surface/10 p-4 shadow-sm">
                 <ProcessForm
-                  process={selectedProcess}
+                  {process}
                   processCount={processes.length}
                   {processIssue}
                   onRemove={removeProcess}
@@ -516,18 +511,18 @@
                 />
 
                 <EnvEditor
-                  bind:rows={selectedProcess.envRows}
-                  processId={selectedProcess.id}
+                  bind:rows={process.envRows}
+                  processId={process.id}
                   {issueFor}
-                  onAdd={() => addEnvRow(selectedProcess)}
-                  onRemove={(id) => removeEnvRow(selectedProcess, id)}
+                  onAdd={() => addEnvRow(process)}
+                  onRemove={(id) => removeEnvRow(process, id)}
                   onFieldBlur={markTouched}
                 />
 
                 <div class="grid grid-cols-1 gap-3 lg:grid-cols-[220px_minmax(0,1fr)]">
                   <div class="hidden lg:block"></div>
                   <DependencyEditor
-                    process={selectedProcess}
+                    {process}
                     {processes}
                     {dependencyIssue}
                     onAdd={addDependency}
@@ -536,9 +531,9 @@
                   />
                 </div>
 
-                <ReadyCheckEditor process={selectedProcess} {readyIssue} onFieldBlur={markTouched} />
-              </section>
-            {/if}
+                <ReadyCheckEditor {process} {readyIssue} onFieldBlur={markTouched} />
+              </div>
+            {/each}
 
             <section class="grid gap-2 border-t border-border pt-5">
               <div class="flex items-center justify-between">
@@ -563,6 +558,17 @@
     <aside class="min-h-0 border-b border-border bg-surface/90 lg:border-b-0 lg:border-r">
       <div class="flex h-full min-h-0 flex-col">
         <div class="border-b border-border px-4 py-4">
+          <button
+            type="button"
+            class="mb-3 inline-flex items-center gap-2 rounded-md px-2 py-1.5 text-xs font-semibold text-text-subtle transition-colors duration-75 hover:bg-surface-hover hover:text-text cursor-pointer"
+            onclick={requestClose}
+            aria-label="Go back"
+          >
+            <svg viewBox="0 0 16 16" class="h-3.5 w-3.5" aria-hidden="true">
+              <path d="M9.5 3.5L5 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <span>Retour</span>
+          </button>
           <div class="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-subtle">Settings</div>
           <div class="mt-3 text-sm font-semibold text-text">{project?.name ?? "No project selected"}</div>
           <div class="mt-1 text-xs leading-5 text-text-subtle">{project?.baseDir ?? "Open a project to edit its runtime configuration."}</div>
@@ -580,35 +586,6 @@
             {/each}
           </div>
         </nav>
-
-        <div class="min-h-0 flex-1 px-3 py-3">
-          <div class="mb-2 flex items-center justify-between px-1">
-            <div class="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-subtle">Processes</div>
-            <Button size="sm" onclick={addProcess} disabled={loading || loadError !== null}>Add</Button>
-          </div>
-
-          <div role="listbox" aria-label="Processes" aria-orientation="vertical" class="flex min-h-0 gap-2 overflow-x-auto lg:block lg:h-full lg:overflow-y-auto">
-            {#each processes as process (process.id)}
-              <button
-                id={processOptionId(process.id)}
-                type="button"
-                role="option"
-                class={`flex min-w-44 items-center justify-between gap-2 rounded-md px-3 py-1.5 text-left text-[13px] transition-colors duration-75 lg:mb-1 lg:w-full lg:min-w-0 ${
-                  process.id === selectedProcess?.id
-                    ? "bg-surface-raised/70 text-text"
-                    : "text-text-subtle hover:bg-surface-hover/70 hover:text-text"
-                }`}
-                aria-selected={process.id === selectedProcess?.id ? "true" : "false"}
-                tabindex={process.id === selectedProcess?.id ? 0 : -1}
-                onclick={() => (selectedProcessId = process.id)}
-                onkeydown={(event) => handleProcessOptionKeydown(event, process.id)}
-              >
-                <span class="min-w-0 truncate">{process.name || "Unnamed process"}</span>
-                <span class="shrink-0 text-[11px] text-text-subtle">{process.kind}</span>
-              </button>
-            {/each}
-          </div>
-        </div>
       </div>
     </aside>
 
@@ -665,46 +642,43 @@
             <div class="flex items-start justify-between gap-3">
               <div>
                 <h2 class="text-base font-semibold text-text">Processes</h2>
-                <p class="mt-1 text-sm leading-6 text-text-subtle">Select a process in the left rail to edit command, env, dependencies, and readiness.</p>
+                <p class="mt-1 text-sm leading-6 text-text-subtle">Manage configured local processes below.</p>
               </div>
               <Button size="sm" onclick={addProcess} disabled={loading || loadError !== null}>Add process</Button>
             </div>
 
-            {#if selectedProcess}
-              <div
-                id={processPanelId(selectedProcess.id)}
-                role="region"
-                aria-labelledby={processOptionId(selectedProcess.id)}
-                class="grid gap-0"
-              >
-                <ProcessForm
-                  process={selectedProcess}
-                  processCount={processes.length}
-                  {processIssue}
-                  onRemove={removeProcess}
-                  onFieldBlur={markTouched}
-                />
+            {#if processes.length > 0}
+              {#each processes as process, index (process.id)}
+                <div class="grid gap-0 border border-border/50 rounded-xl bg-surface/10 p-5 shadow-sm">
+                  <ProcessForm
+                    {process}
+                    processCount={processes.length}
+                    {processIssue}
+                    onRemove={removeProcess}
+                    onFieldBlur={markTouched}
+                  />
 
-                <EnvEditor
-                  bind:rows={selectedProcess.envRows}
-                  processId={selectedProcess.id}
-                  {issueFor}
-                  onAdd={() => addEnvRow(selectedProcess)}
-                  onRemove={(id) => removeEnvRow(selectedProcess, id)}
-                  onFieldBlur={markTouched}
-                />
+                  <EnvEditor
+                    bind:rows={process.envRows}
+                    processId={process.id}
+                    {issueFor}
+                    onAdd={() => addEnvRow(process)}
+                    onRemove={(id) => removeEnvRow(process, id)}
+                    onFieldBlur={markTouched}
+                  />
 
-                <DependencyEditor
-                  process={selectedProcess}
-                  {processes}
-                  {dependencyIssue}
-                  onAdd={addDependency}
-                  onRemove={removeDependency}
-                  onFieldBlur={markTouched}
-                />
+                  <DependencyEditor
+                    {process}
+                    {processes}
+                    {dependencyIssue}
+                    onAdd={addDependency}
+                    onRemove={removeDependency}
+                    onFieldBlur={markTouched}
+                  />
 
-                <ReadyCheckEditor process={selectedProcess} {readyIssue} onFieldBlur={markTouched} />
-              </div>
+                  <ReadyCheckEditor {process} {readyIssue} onFieldBlur={markTouched} />
+                </div>
+              {/each}
             {:else}
               <div class="px-1 text-sm text-text-subtle">
                 Add a process to start building the runtime graph.
@@ -756,26 +730,6 @@
 
 {#if open && mode === "page"}
   <section class="flex h-full min-h-0 flex-col bg-canvas text-text">
-    <header class="border-b border-border bg-canvas/95 px-5 py-4">
-      <button
-        type="button"
-        class="inline-flex items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium text-text-subtle transition-colors duration-75 hover:bg-surface-hover hover:text-text"
-        onclick={requestClose}
-      >
-        <svg viewBox="0 0 16 16" class="h-4 w-4" aria-hidden="true">
-          <path d="M9.5 3.5L5 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-        </svg>
-        <span>Go back</span>
-      </button>
-
-      <div class="mt-3 flex items-start justify-between gap-4">
-        <div class="min-w-0">
-          <h1 class="text-lg font-semibold text-text">Runtime configuration</h1>
-          <p class="mt-1 text-sm leading-6 text-text-subtle">{dialogDescription}</p>
-        </div>
-      </div>
-    </header>
-
     <div class="min-h-0 flex-1 overflow-hidden">
       {@render pageBody()}
     </div>

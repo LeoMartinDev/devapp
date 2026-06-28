@@ -18,8 +18,8 @@
 <section class="grid gap-4 border-t border-border/70 pt-5">
   <div class="flex items-start justify-between gap-3">
     <div>
-      <h3 class="text-sm font-semibold text-text">Process</h3>
-      <p class="mt-1 text-xs leading-5 text-text-subtle">Name, command, and kind for the selected runtime node.</p>
+      <h3 class="text-sm font-semibold text-text">Process: {process.name || "Unnamed"}</h3>
+      <p class="mt-1 text-xs leading-5 text-text-subtle">Name, command, and kind for this runtime node.</p>
     </div>
     <IconButton
       label="Remove process"

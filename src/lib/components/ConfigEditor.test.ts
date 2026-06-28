@@ -82,7 +82,6 @@ describe("ConfigEditor", () => {
     expect(queryByRole("dialog")).toBeNull();
 
     const backButton = getByRole("button", { name: "Go back" });
-    expect(getByRole("heading", { name: "Runtime configuration" })).toBeInTheDocument();
 
     await fireEvent.click(backButton);
     expect(onClose).toHaveBeenCalledTimes(1);

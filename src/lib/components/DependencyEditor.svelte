@@ -30,16 +30,19 @@
   <div class="flex items-start justify-between gap-3">
     <div>
       <h3 class="text-sm font-semibold text-text">Dependencies</h3>
-      <p class="mt-1 text-xs leading-5 text-text-subtle">Process launch order for the selected node.</p>
+      <p class="mt-1 text-xs leading-5 text-text-subtle">Process launch order for this node.</p>
     </div>
-    <Button size="sm" onclick={() => onAdd(process)}>Add dependency</Button>
   </div>
 
   {#if process.dependencies.length === 0}
-    <div class="px-1 text-sm text-text-subtle">
-      Starts without dependencies.
+    <div class="flex items-center justify-between gap-3 px-1 text-sm text-text-subtle">
+      <span>Starts without dependencies.</span>
+      <Button size="sm" onclick={() => onAdd(process)}>Add dependency</Button>
     </div>
   {:else}
+    <div class="flex justify-end mb-1">
+      <Button size="sm" onclick={() => onAdd(process)}>Add dependency</Button>
+    </div>
     <div class="grid gap-2.5">
       {#each process.dependencies as dependency, index (dependency.id)}
         {@const depError = dependencyIssue(process, dependency.id)}

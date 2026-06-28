@@ -27,15 +27,18 @@
         <p class="mt-1 text-xs leading-5 text-text-subtle">Injected into this process.</p>
       {/if}
     </div>
-    <Button size="sm" onclick={onAdd}>Add variable</Button>
   </div>
 
   <div class="grid gap-2.5">
     {#if rows.length === 0}
-      <div class="px-1 text-sm text-text-subtle">
-        {processId ? "No process variables." : "No global variables."}
+      <div class="flex items-center justify-between gap-3 px-1 text-sm text-text-subtle">
+        <span>{processId ? "No process variables." : "No global variables."}</span>
+        <Button size="sm" onclick={onAdd}>Add variable</Button>
       </div>
     {:else}
+      <div class="flex justify-end mb-1">
+        <Button size="sm" onclick={onAdd}>Add variable</Button>
+      </div>
       {#each rows as row, index (row.id)}
         {@const envIssueKey = processId ? `process.${processId}.env.${row.id}.key` : `env.${row.id}.key`}
         {@const keyError = issueFor(envIssueKey)}
