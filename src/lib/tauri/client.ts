@@ -1,5 +1,5 @@
 import { invoke } from "$lib/tauri/transport";
-import { getCurrentWindow } from "@tauri-apps/api/window";
+import { setWindowTitle as setWindowTitleOnWindow } from "$lib/tauri/window";
 
 import type {
   GitInfo,
@@ -136,5 +136,5 @@ export async function getGitInfo(baseDir: string): Promise<GitInfo> {
 }
 
 export function setWindowTitle(title: string): Promise<void> {
-  return getCurrentWindow().setTitle(title);
+  return setWindowTitleOnWindow(title);
 }

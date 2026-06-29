@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { getCurrentWindow } from "@tauri-apps/api/window";
   import IconButton from "$lib/components/ui/IconButton.svelte";
   import ProjectMenu from "$lib/components/ProjectMenu.svelte";
   import RunStopButton from "$lib/components/RunStopButton.svelte";
   import WindowControls from "$lib/components/WindowControls.svelte";
   import { runtimeStore } from "$lib/stores/runtime.svelte";
+  import { startWindowDrag } from "$lib/tauri/window";
 
   const isMac = navigator.platform.toLowerCase().includes("mac");
 
@@ -22,7 +22,7 @@
 
   function onDragStart(e: MouseEvent) {
     if ((e.target as HTMLElement).closest("[data-tauri-no-drag]")) return;
-    void getCurrentWindow().startDragging();
+    void startWindowDrag();
   }
 
   async function openTerminal() {

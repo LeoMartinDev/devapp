@@ -1,10 +1,15 @@
 <script lang="ts">
-  import { getCurrentWindow } from "@tauri-apps/api/window";
+  import {
+    canUseTauriWindow,
+    closeWindow,
+    isWindowMaximized,
+    minimizeWindow,
+    toggleWindowMaximize,
+  } from "$lib/tauri/window";
 
   let isMaximized = $state(false);
   let platform = $state<"win32" | "linux">("linux");
-
-  const appWindow = getCurrentWindow();
+  const hasWindowControls = canUseTauriWindow();
 
   $effect(() => {
     // Detect platform from navigator
@@ -12,7 +17,8 @@
     platform = p.includes("win") ? "win32" : "linux";
 
     // Check initial maximized state
-    void appWindow.isMaximized().then((v) => (isMaximized = v));
+    if (!hasWindowControls) return;
+    void isWindowMaximized().then((v) => (isMaximized = v));
   });
 </script>
 
@@ -21,7 +27,8 @@
     aria-label="Minimize"
     title="Minimize"
     class="window-control"
-    onclick={() => appWindow.minimize()}
+    disabled={!hasWindowControls}
+    onclick={() => void minimizeWindow()}
   >
     {#if platform === "win32"}
       <svg width="10" height="10" viewBox="0 0 10 10">
@@ -38,8 +45,9 @@
     aria-label={isMaximized ? "Restore" : "Maximize"}
     title={isMaximized ? "Restore" : "Maximize"}
     class="window-control"
+    disabled={!hasWindowControls}
     onclick={() => {
-      void appWindow.toggleMaximize();
+      void toggleWindowMaximize();
       isMaximized = !isMaximized;
     }}
   >
@@ -76,7 +84,8 @@
     aria-label="Close"
     title="Close"
     class="window-control window-control-close"
-    onclick={() => appWindow.close()}
+    disabled={!hasWindowControls}
+    onclick={() => void closeWindow()}
   >
     <svg width="10" height="10" viewBox="0 0 10 10">
       <path d="M1 1l8 8M9 1l-8 8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
@@ -101,6 +110,10 @@
   .window-control:hover {
     background: var(--color-surface-hover, #1b1d22);
     color: var(--color-text, #e7e9ee);
+  }
+  .window-control:disabled {
+    opacity: 0.45;
+    cursor: default;
   }
   .window-control-close:hover {
     background: #c42b1c;

@@ -1,6 +1,8 @@
 import { LogicalPosition } from "@tauri-apps/api/dpi";
 import { Menu, type MenuOptions } from "@tauri-apps/api/menu";
 
+import { isTauriRuntime } from "./environment";
+
 export type NativeMenuItem = {
   label: string;
   enabled?: boolean;
@@ -15,7 +17,7 @@ export type NativeMenuPosition = {
 };
 
 export function canShowNativeMenu(): boolean {
-  return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+  return isTauriRuntime();
 }
 
 export async function showNativeMenu(

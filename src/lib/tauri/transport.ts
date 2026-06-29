@@ -19,8 +19,9 @@ import {
   type UnlistenFn,
 } from "@tauri-apps/api/event";
 
-const isTauri =
-  typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+import { isTauriRuntime } from "./environment";
+
+const isTauri = isTauriRuntime();
 
 // The mock module is imported lazily and cached so the seam resolves the same
 // instance on every call without paying the dynamic-import cost twice.
