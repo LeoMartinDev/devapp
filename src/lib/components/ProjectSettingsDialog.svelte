@@ -96,7 +96,7 @@
   onClose={closeDialog}
   closeOnOverlay={!saving && !removing}
 >
-  <div class="space-y-4 overflow-y-auto px-6 py-4">
+  <div class="space-y-5 overflow-y-auto px-8 py-5">
     <TextField
       label="Name"
       density="compact"

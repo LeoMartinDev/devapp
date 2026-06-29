@@ -34,7 +34,7 @@
     {...rest}
     class={`w-full rounded-md border bg-surface-raised text-sm text-text outline-none transition-colors duration-75 ${
       error ? "border-danger focus:border-danger" : "border-border focus:border-accent"
-    } ${density === "compact" ? "h-8 px-2.5" : "h-9 px-3"} ${className}`}
+    } ${density === "compact" ? "h-7 px-2 text-[13px]" : "h-9 px-3"} ${className}`}
     bind:value
   >
     {#each options as option}

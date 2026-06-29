@@ -590,7 +590,7 @@
     </aside>
 
     <div bind:this={pageScrollContainer} class="min-h-0 overflow-y-auto bg-canvas" onscroll={syncActiveSectionFromScroll}>
-      <div class="mx-auto flex w-full max-w-[62rem] flex-col gap-5 px-10 py-8 lg:px-16 lg:py-10">
+      <div class="mx-auto flex w-full max-w-[58rem] flex-col gap-5 px-14 py-8 lg:px-24 lg:py-10">
         {#if loading}
           <div class="text-sm text-text-subtle">Loading settings...</div>
         {:else if loadError}
