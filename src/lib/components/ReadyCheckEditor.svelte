@@ -156,6 +156,7 @@
     <div class="grid grid-cols-1 gap-3 md:grid-cols-[180px_minmax(0,1fr)]">
       <SelectField
         label="Type"
+        density="compact"
         options={readyTypeOptions()}
         class={typeState.className}
         aria-invalid={typeState.invalid}
@@ -170,6 +171,7 @@
         <div>
           <TextField
             label="URL"
+            density="compact"
             class={httpUrlState.className}
             aria-invalid={httpUrlState.invalid}
             aria-describedby={httpUrlState.describedBy}
@@ -187,6 +189,7 @@
           <div>
             <TextField
               label="Pattern"
+              density="compact"
               class={logPatternState.className}
               aria-invalid={logPatternState.invalid}
               aria-describedby={logPatternState.describedBy}
@@ -211,6 +214,7 @@
         <div>
           <TextField
             label="Duration ms"
+            density="compact"
             type="number"
             min="0"
             class={delayDurationState.className}
@@ -229,6 +233,7 @@
         <div>
           <TextField
             label="Command"
+            density="compact"
             monospace
             class={commandState.className}
             aria-invalid={commandState.invalid}
@@ -254,6 +259,7 @@
           <div>
             <TextField
               label="Interval ms"
+              density="compact"
               type="number"
               min="0"
               class={intervalState.className}
@@ -271,6 +277,7 @@
         <div>
           <TextField
             label="Timeout ms"
+            density="compact"
             type="number"
             min="0"
             class={timeoutState.className}

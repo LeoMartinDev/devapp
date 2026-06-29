@@ -91,14 +91,15 @@
 <Dialog
   {open}
   title={project ? "Edit project" : "Register project"}
-  size="md"
+  size="sm"
   variant="panel"
   onClose={closeDialog}
   closeOnOverlay={!saving && !removing}
 >
-  <div class="space-y-4 overflow-y-auto px-5 py-5">
+  <div class="space-y-4 overflow-y-auto px-4 py-4">
     <TextField
       label="Name"
+      density="compact"
       error={issueFor("project.name")}
       bind:value={name}
     />
@@ -106,6 +107,7 @@
     <TextField
       label="Base directory"
       placeholder="/path/to/project"
+      density="compact"
       error={issueFor("project.baseDir")}
       bind:value={baseDir}
     />
@@ -113,6 +115,7 @@
     <label class="block space-y-1.5 text-sm">
       <SelectField
         label="Configuration source"
+        density="compact"
         options={configSourceOptions}
         error={issueFor("project.configSource")}
         bind:value={configSource}
@@ -131,16 +134,16 @@
     <div class="flex items-center justify-between gap-3">
       <div>
         {#if project && !launchLocked}
-          <Button variant="danger" onclick={() => (confirmRemoveOpen = true)} disabled={saving || removing}>
+          <Button size="sm" variant="danger" onclick={() => (confirmRemoveOpen = true)} disabled={saving || removing}>
             Remove project
           </Button>
         {/if}
       </div>
       <div class="flex justify-end gap-2">
-        <Button onclick={onClose} disabled={saving || removing}>
+        <Button size="sm" onclick={onClose} disabled={saving || removing}>
           Cancel
         </Button>
-        <Button variant="primary" onclick={submit} disabled={saving || removing}>
+        <Button size="sm" variant="primary" onclick={submit} disabled={saving || removing}>
           Save project
         </Button>
       </div>

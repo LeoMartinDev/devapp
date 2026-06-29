@@ -6,6 +6,7 @@
     value?: string | number | null;
     error?: string | null;
     monospace?: boolean;
+    density?: "default" | "compact";
   };
 
   let {
@@ -16,14 +17,15 @@
     type = "text",
     autocomplete,
     monospace = false,
+    density = "default",
     class: className = "",
     ...rest
   }: Props = $props();
 
   const inputClass = $derived(
-    `h-9 w-full rounded-md border bg-surface-raised px-3 text-sm text-text outline-none transition-colors duration-75 placeholder:text-text-subtle ${
+    `w-full rounded-md border bg-surface-raised text-sm text-text outline-none transition-colors duration-75 placeholder:text-text-subtle ${
       error ? "border-danger focus:border-danger" : "border-border focus:border-accent"
-    } ${monospace ? "font-mono text-[13px]" : ""} ${className}`,
+    } ${density === "compact" ? "h-8 px-2.5" : "h-9 px-3"} ${monospace ? "font-mono text-[13px]" : ""} ${className}`,
   );
 </script>
 

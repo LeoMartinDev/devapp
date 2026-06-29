@@ -48,6 +48,7 @@
         <div class="grid grid-cols-1 gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto] md:items-start">
           <div class="grid gap-1">
             <TextField
+              density="compact"
               aria-label={`${scopeLabel} environment variable key ${rowNumber}`}
               aria-invalid={keyError ? "true" : undefined}
               aria-describedby={keyError ? keyErrorId : undefined}
@@ -61,6 +62,7 @@
             {/if}
           </div>
           <TextField
+            density="compact"
             aria-label={`${scopeLabel} environment variable value ${rowNumber}`}
             placeholder="value"
             bind:value={row.value}

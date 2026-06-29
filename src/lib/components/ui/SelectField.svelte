@@ -12,6 +12,7 @@
     value?: string;
     options: SelectOption[];
     error?: string | null;
+    density?: "default" | "compact";
   };
 
   let {
@@ -19,6 +20,7 @@
     value = $bindable(""),
     options,
     error = null,
+    density = "default",
     class: className = "",
     ...rest
   }: Props = $props();
@@ -30,9 +32,9 @@
   {/if}
   <select
     {...rest}
-    class={`h-9 w-full rounded-md border bg-surface-raised px-3 text-sm text-text outline-none transition-colors duration-75 ${
+    class={`w-full rounded-md border bg-surface-raised text-sm text-text outline-none transition-colors duration-75 ${
       error ? "border-danger focus:border-danger" : "border-border focus:border-accent"
-    } ${className}`}
+    } ${density === "compact" ? "h-8 px-2.5" : "h-9 px-3"} ${className}`}
     bind:value
   >
     {#each options as option}
