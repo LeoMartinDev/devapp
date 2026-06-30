@@ -62,20 +62,31 @@ function renderLoadedEditor() {
       open: true,
       project: loadedProject,
       onClose: vi.fn(),
-      mode: "page",
     },
   });
 }
 
 describe("ConfigEditor", () => {
-  it("renders as a full page with a go back control in page mode", async () => {
+  it("renders as a full page settings surface by default", () => {
+    const { queryByRole, getByRole } = render(ConfigEditor, {
+      props: {
+        open: true,
+        project: null,
+        onClose: vi.fn(),
+      },
+    });
+
+    expect(queryByRole("dialog")).toBeNull();
+    expect(getByRole("button", { name: "Go back" })).toBeInTheDocument();
+  });
+
+  it("renders as a full page with a go back control", async () => {
     const onClose = vi.fn();
     const { getByRole, queryByRole } = render(ConfigEditor, {
       props: {
         open: true,
         project: null,
         onClose,
-        mode: "page",
       },
     });
 
@@ -87,13 +98,12 @@ describe("ConfigEditor", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it("shows a dedicated settings navigation in page mode", () => {
+  it("shows a dedicated settings navigation", () => {
     const { getByRole } = render(ConfigEditor, {
       props: {
         open: true,
         project: null,
         onClose: vi.fn(),
-        mode: "page",
       },
     });
 
@@ -111,7 +121,6 @@ describe("ConfigEditor", () => {
         open: true,
         project: null,
         onClose: vi.fn(),
-        mode: "page",
       },
     });
 
@@ -134,13 +143,12 @@ describe("ConfigEditor", () => {
     });
   });
 
-  it("keeps the primary action label stable in page mode", () => {
+  it("keeps the primary action label stable", () => {
     const { getByRole, queryByRole } = render(ConfigEditor, {
       props: {
         open: true,
         project: null,
         onClose: vi.fn(),
-        mode: "page",
       },
     });
 
@@ -148,64 +156,31 @@ describe("ConfigEditor", () => {
     expect(queryByRole("button", { name: "Save settings" })).toBeNull();
   });
 
-  it("renders the process rail as an accessible listbox and switches the selected process panel after load", async () => {
-    const { findByRole, getByRole } = renderLoadedEditor();
+  it("renders one process card per loaded process", async () => {
+    const { findByRole, getAllByRole, getByRole } = renderLoadedEditor();
 
-    expect(await findByRole("listbox", { name: "Processes" })).toBeInTheDocument();
+    expect(await findByRole("heading", { name: "Processes" })).toBeInTheDocument();
+    expect(getByRole("heading", { name: "Process: api" })).toBeInTheDocument();
+    expect(getByRole("heading", { name: "Process: worker" })).toBeInTheDocument();
 
-    const apiOption = getByRole("option", { name: /api/i });
-    const workerOption = getByRole("option", { name: /worker/i });
-
-    expect(apiOption).toHaveAttribute("aria-selected", "true");
-    expect(getByRole("region", { name: /api/i })).toBeInTheDocument();
-
-    await fireEvent.click(workerOption);
-
-    await waitFor(() => {
-      expect(workerOption).toHaveAttribute("aria-selected", "true");
-    });
-
-    expect(apiOption).toHaveAttribute("aria-selected", "false");
-    expect(getByRole("region", { name: /worker/i })).toBeInTheDocument();
-    expect(getByRole("textbox", { name: "Name" })).toHaveValue("worker");
+    const processNameInputs = getAllByRole("textbox", { name: "Name" }) as HTMLInputElement[];
+    expect(processNameInputs.map((input) => input.value)).toEqual(expect.arrayContaining(["api", "worker"]));
   });
 
-  it("supports keyboard navigation across loaded process options", async () => {
-    const { findByRole, getByRole } = renderLoadedEditor();
+  it("shows process cards with nested dependency and readiness sections", async () => {
+    const { findByRole, getAllByRole } = renderLoadedEditor();
 
-    await findByRole("region", { name: /api/i });
-
-    const apiOption = getByRole("option", { name: /api/i });
-    const workerOption = getByRole("option", { name: /worker/i });
-
-    apiOption.focus();
-    expect(apiOption).toHaveFocus();
-
-    await fireEvent.keyDown(apiOption, { key: "ArrowDown" });
-
-    await waitFor(() => {
-      expect(workerOption).toHaveAttribute("aria-selected", "true");
-    });
-
-    expect(workerOption).toHaveFocus();
-    expect(getByRole("region", { name: /worker/i })).toBeInTheDocument();
-
-    await fireEvent.keyDown(workerOption, { key: "Home" });
-
-    await waitFor(() => {
-      expect(apiOption).toHaveAttribute("aria-selected", "true");
-    });
-
-    expect(apiOption).toHaveFocus();
-    expect(getByRole("region", { name: /api/i })).toBeInTheDocument();
+    await findByRole("heading", { name: "Processes" });
+    expect(getAllByRole("heading", { name: "Dependencies" })).toHaveLength(2);
+    expect(getAllByRole("heading", { name: "Readiness" })).toHaveLength(2);
   });
 
   it("shows dirty footer status for a loaded project while keeping the save label stable", async () => {
-    const { findByRole, getByRole, getByText } = renderLoadedEditor();
+    const { findByRole, getAllByRole, getByRole, getByText } = renderLoadedEditor();
 
-    await findByRole("region", { name: /api/i });
+    await findByRole("heading", { name: "Process: api" });
 
-    await fireEvent.input(getByRole("textbox", { name: "Name" }), {
+    await fireEvent.input(getAllByRole("textbox", { name: "Name" })[0], {
       target: { value: "api-renamed" },
     });
 

@@ -26,7 +26,7 @@
   const errorFieldClass = "border-danger focus:border-danger";
 </script>
 
-<section class="grid gap-3 border-t border-border/70 pt-5">
+<section class="grid gap-3">
   <div class="flex items-start justify-between gap-3">
     <div>
       <h3 class="text-sm font-semibold text-text">Dependencies</h3>
