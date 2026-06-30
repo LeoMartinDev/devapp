@@ -43,6 +43,7 @@
   <div class="grid grid-cols-1 gap-3 md:grid-cols-[220px_minmax(0,1fr)]">
   <TextField
     label="Name"
+    density="compact"
     error={processIssue(process, "name")}
     bind:value={process.name}
     onblur={() => onFieldBlur?.(`process.${process.id}.name`)}
@@ -50,6 +51,7 @@
   <TextField
     label="Command"
     placeholder="deno task dev"
+    density="compact"
     monospace
     error={processIssue(process, "cmd")}
     bind:value={process.cmd}
@@ -60,6 +62,7 @@
   <div class="grid grid-cols-1 gap-3 md:grid-cols-[220px_minmax(0,1fr)]">
     <SelectField
       label="Kind"
+      density="compact"
       options={[
         { value: "service", label: "Service" },
         { value: "task", label: "Task" },

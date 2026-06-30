@@ -52,6 +52,7 @@
           <div class="grid grid-cols-1 gap-2 md:grid-cols-[minmax(0,1fr)_150px_auto] md:items-start">
             <SelectField
               aria-label={`Dependency process ${dependencyIndex}`}
+              density="compact"
               aria-invalid={depError ? "true" : undefined}
               aria-describedby={depError ? depErrorId : undefined}
               class={depError ? errorFieldClass : ""}
@@ -67,6 +68,7 @@
             />
             <SelectField
               aria-label={`Dependency condition ${dependencyIndex}`}
+              density="compact"
               options={[
                 { value: "ready" satisfies DependencyCondition, label: "Ready" },
                 { value: "success" satisfies DependencyCondition, label: "Success" },

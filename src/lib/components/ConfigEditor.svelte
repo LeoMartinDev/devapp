@@ -474,7 +474,7 @@
 {#snippet panelBody()}
   <div class={panelLayoutClass}>
     <div class="flex min-h-0 flex-col w-full">
-      <div class="min-h-0 flex-1 overflow-y-auto px-5 py-5">
+      <div class="min-h-0 flex-1 overflow-y-auto px-4 py-4">
         {#if loading}
           <div class="text-sm text-text-subtle">Loading settings...</div>
         {:else if loadError}
@@ -486,7 +486,7 @@
             </div>
           </div>
         {:else}
-          <div class="grid gap-5">
+          <div class="grid gap-4">
             <EnvEditor
               bind:rows={globalEnvRows}
               {issueFor}
@@ -501,7 +501,7 @@
             </div>
 
             {#each processes as process, index (process.id)}
-              <div class="grid gap-4 border border-border/50 rounded-xl bg-surface/10 p-4 shadow-sm">
+              <div class="grid gap-4 rounded-xl border border-border/60 bg-surface-raised/70 p-4 shadow-sm">
                 <ProcessForm
                   {process}
                   processCount={processes.length}
@@ -543,7 +543,7 @@
                 </Button>
               </div>
               {#if showPreview}
-                <pre data-native-selectable="yaml-preview" class="max-h-72 overflow-auto rounded-md border border-border bg-surface-raised/70 p-3 font-mono text-xs leading-5 text-text-muted">{previewYaml}</pre>
+                <pre data-native-selectable="yaml-preview" class="max-h-72 overflow-auto rounded-md border border-border/70 bg-surface-raised/60 p-3 font-mono text-xs leading-5 text-text-muted">{previewYaml}</pre>
               {/if}
             </section>
           </div>
@@ -590,7 +590,7 @@
     </aside>
 
     <div bind:this={pageScrollContainer} class="min-h-0 overflow-y-auto bg-canvas" onscroll={syncActiveSectionFromScroll}>
-      <div class="mx-auto flex w-full max-w-245 flex-col gap-6 px-5 py-6 lg:px-8 lg:py-8">
+      <div class="mx-auto flex w-full max-w-[52rem] flex-col gap-5 px-20 py-8 lg:px-32 lg:py-10">
         {#if loading}
           <div class="text-sm text-text-subtle">Loading settings...</div>
         {:else if loadError}
@@ -609,13 +609,13 @@
             </div>
 
             <div class="grid gap-3 sm:grid-cols-2">
-              <div class="rounded-lg border border-border/70 bg-surface/40 px-4 py-3">
+              <div class="rounded-lg border border-border/70 bg-surface-raised/65 px-4 py-3">
                 <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-subtle">Project</div>
                 <div class="mt-2 text-sm font-medium text-text">{project?.name ?? "No project selected"}</div>
                 <div class="mt-1 wrap-break-word text-xs leading-5 text-text-subtle">{project?.baseDir ?? "Select a project to load its runtime config."}</div>
               </div>
 
-              <div class="rounded-lg border border-border/70 bg-surface/40 px-4 py-3">
+              <div class="rounded-lg border border-border/70 bg-surface-raised/65 px-4 py-3">
                 <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-subtle">Config source</div>
                 <div class="mt-2 text-sm font-medium text-text">{projectSourceLabel}</div>
                 <div class="mt-1 wrap-break-word text-xs leading-5 text-text-subtle">{project?.configPath ?? "The backend will resolve devapp.yml when a project is selected."}</div>
@@ -649,7 +649,7 @@
 
             {#if processes.length > 0}
               {#each processes as process, index (process.id)}
-                <div class="grid gap-0 border border-border/50 rounded-xl bg-surface/10 p-5 shadow-sm">
+                <div class="grid gap-0 rounded-xl border border-border/60 bg-surface-raised/70 p-4 shadow-sm">
                   <ProcessForm
                     {process}
                     processCount={processes.length}
@@ -697,7 +697,7 @@
               </Button>
             </div>
             {#if showPreview}
-              <pre data-native-selectable="yaml-preview" class="max-h-72 overflow-auto rounded-md border border-border/70 bg-surface/40 p-3 font-mono text-xs leading-5 text-text-muted">{previewYaml}</pre>
+              <pre data-native-selectable="yaml-preview" class="max-h-72 overflow-auto rounded-md border border-border/70 bg-surface-raised/60 p-3 font-mono text-xs leading-5 text-text-muted">{previewYaml}</pre>
             {/if}
           </section>
         {/if}
@@ -718,10 +718,10 @@
       {/if}
     </div>
     <div class="flex gap-2">
-      <Button onclick={requestClose} disabled={saving}>
+      <Button size="sm" onclick={requestClose} disabled={saving}>
         Cancel
       </Button>
-      <Button variant="primary" onclick={save} disabled={!project || saving || loadError !== null}>
+      <Button size="sm" variant="primary" onclick={save} disabled={!project || saving || loadError !== null}>
         Save
       </Button>
     </div>
