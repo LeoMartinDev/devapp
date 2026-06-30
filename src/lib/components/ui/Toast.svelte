@@ -26,14 +26,14 @@
   <div class="pointer-events-none fixed bottom-4 right-4 z-[60] flex flex-col-reverse gap-2">
     {#each toasts as toast (toast.id)}
       <div
-        class="pointer-events-auto flex items-start gap-2 rounded-lg border bg-surface-raised px-3 py-2.5 text-sm shadow-lg select-none animate-toast-in {borderByType[toast.type]}"
+        class="pointer-events-auto flex items-start gap-2 rounded-lg border bg-surface-raised px-3 py-2 text-[13px] shadow-lg select-none animate-toast-in {borderByType[toast.type]}"
         style="max-width: 320px"
       >
         <span class="{textByType[toast.type]} mt-0.5 text-sm">{iconByType[toast.type]}</span>
         <div class="min-w-0 flex-1">
           <div class="text-text">{toast.message}</div>
           {#if toast.detail}
-            <div class="mt-0.5 text-xs text-text-muted">{toast.detail}</div>
+            <div class="mt-0.5 text-[11px] text-text-muted">{toast.detail}</div>
           {/if}
         </div>
         <button

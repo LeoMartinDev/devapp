@@ -18,7 +18,7 @@
 <section class="grid gap-4">
   <div class="flex items-start justify-between gap-3">
     <div>
-      <h3 class="text-sm font-semibold text-text">Process: {process.name || "Unnamed"}</h3>
+      <h3 class="text-[13px] font-semibold text-text">Process: {process.name || "Unnamed"}</h3>
       <p class="mt-1 text-xs leading-5 text-text-subtle">Name, command, and kind for this runtime node.</p>
     </div>
     <IconButton

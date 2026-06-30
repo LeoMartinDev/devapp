@@ -180,7 +180,7 @@
       aria-describedby={description ? descriptionId : undefined}
       tabindex="-1"
     >
-      <header class={`border-b border-border px-5 ${variant === "panel" ? "py-3.5" : "py-4"}`}>
+      <header class={`border-b border-border px-5 ${variant === "panel" ? "py-3" : "py-3.5"}`}>
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0 flex-1">
             <h2 id={titleId} class="text-sm font-semibold">{title}</h2>
@@ -211,7 +211,7 @@
       </div>
 
       {#if footer}
-        <footer class="border-t border-border px-5 py-4">
+        <footer class="border-t border-border px-5 py-3.5">
           {@render footer()}
         </footer>
       {/if}

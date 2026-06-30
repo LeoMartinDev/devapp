@@ -16,7 +16,7 @@
   }: Props = $props();
 </script>
 
-<label class={`flex items-center gap-2 text-xs text-text-muted ${className}`}>
+<label class={`flex items-center gap-2 text-[12px] text-text-muted ${className}`}>
   <input {...rest} class="accent-accent" type="checkbox" bind:checked />
   <span>{label}</span>
 </label>

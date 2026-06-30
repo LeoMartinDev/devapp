@@ -23,15 +23,15 @@
   }: Props = $props();
 
   const inputClass = $derived(
-    `w-full rounded-md border bg-surface-raised text-sm text-text outline-none transition-colors duration-75 placeholder:text-text-subtle ${
+    `w-full rounded-md border bg-surface-raised text-[13px] text-text outline-none transition-colors duration-75 placeholder:text-text-subtle ${
       error ? "border-danger focus:border-danger" : "border-border focus:border-accent"
-    } ${density === "compact" ? "h-6 px-1.5 text-[12px]" : "h-9 px-3"} ${monospace ? "font-mono text-[13px]" : ""} ${className}`,
+    } ${density === "compact" ? "h-7 px-2" : "h-8 px-2.5"} ${monospace ? "font-mono" : ""} ${className}`,
   );
 </script>
 
-<label class="grid gap-1.5 text-sm">
+<label class="grid gap-1.5 text-[12px]">
   {#if label}
-    <span class="text-text-subtle">{label}</span>
+    <span class="text-[12px] text-text-subtle">{label}</span>
   {/if}
   <input {...rest} {type} {placeholder} {autocomplete} class={inputClass} bind:value />
   {#if error}

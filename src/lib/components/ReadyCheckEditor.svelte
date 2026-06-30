@@ -145,7 +145,7 @@
 
   <CheckboxField
     label="Enable readiness check"
-    class="text-xs text-text-muted"
+    class="text-[12px] text-text-muted"
     bind:checked={readyEnabled}
     onchange={syncReadyEnabled}
     onblur={() => onFieldBlur?.(`process.${process.id}.ready.enabled`)}
@@ -203,7 +203,7 @@
           </div>
           <CheckboxField
             label="Regex"
-            class="mt-7 text-xs text-text-muted"
+            class="mt-7 text-[12px] text-text-muted"
             bind:checked={logRegex}
             onchange={syncLogRegex}
             onblur={() => onFieldBlur?.(`process.${process.id}.ready.logRegex`)}

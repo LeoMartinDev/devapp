@@ -129,7 +129,7 @@
     aria-expanded={open}
     aria-label={label}
     title={label}
-    class="grid h-8 w-8 place-items-center rounded-md text-text-muted transition-colors duration-75 hover:bg-surface-hover hover:text-text disabled:cursor-not-allowed disabled:opacity-55"
+    class="grid h-7 w-7 place-items-center rounded-md text-text-muted transition-colors duration-75 hover:bg-surface-hover hover:text-text disabled:cursor-not-allowed disabled:opacity-55"
     onclick={() => (open = !open)}
   >
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -149,7 +149,7 @@
           type="button"
           role="menuitem"
           disabled={item.disabled}
-          class={`flex w-full items-center px-3 py-1.5 text-left text-[13px] transition-colors duration-75 disabled:cursor-not-allowed disabled:opacity-40 ${
+          class={`flex w-full items-center px-2.5 py-1.5 text-left text-[13px] transition-colors duration-75 disabled:cursor-not-allowed disabled:opacity-40 ${
             item.disabled
               ? ""
               : item.danger

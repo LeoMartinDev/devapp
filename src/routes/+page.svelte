@@ -204,7 +204,7 @@
           {#if runtimeStore.projectId}
             <button
               type="button"
-              class="text-xs text-text-subtle transition-colors hover:text-text"
+              class="text-[12px] text-text-subtle transition-colors hover:text-text"
               aria-label="Open terminal"
               title="Open terminal (Ctrl+T)"
               onclick={() => { void openTerminal(); }}

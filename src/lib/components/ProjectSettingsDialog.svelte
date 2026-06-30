@@ -112,7 +112,7 @@
       bind:value={baseDir}
     />
 
-    <label class="block space-y-1.5 text-sm">
+    <label class="block space-y-1.5 text-[12px]">
       <SelectField
         label="Configuration source"
         density="compact"
