@@ -1,5 +1,6 @@
 import { invoke } from "$lib/tauri/transport";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { canUseTauriApis } from "$lib/tauri/environment";
 
 import type {
   GitInfo,
@@ -136,5 +137,8 @@ export async function getGitInfo(baseDir: string): Promise<GitInfo> {
 }
 
 export function setWindowTitle(title: string): Promise<void> {
+  if (!canUseTauriApis()) {
+    return Promise.resolve();
+  }
   return getCurrentWindow().setTitle(title);
 }

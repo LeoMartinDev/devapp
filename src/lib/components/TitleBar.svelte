@@ -1,5 +1,6 @@
 <script lang="ts">
   import { getCurrentWindow } from "@tauri-apps/api/window";
+  import { canUseTauriApis } from "$lib/tauri/environment";
   import IconButton from "$lib/components/ui/IconButton.svelte";
   import ProjectMenu from "$lib/components/ProjectMenu.svelte";
   import RunStopButton from "$lib/components/RunStopButton.svelte";
@@ -15,12 +16,14 @@
   const selectedProcess = $derived(runtimeStore.selectedProcess);
   const selectedTerminal = $derived(runtimeStore.selectedTerminal);
   const gitInfo = $derived(runtimeStore.gitInfo);
+  const isTauri = canUseTauriApis();
 
   const logActions = $derived(runtimeStore.logActions);
   const projectPath = $derived(project?.baseDir ?? gitInfo?.displayPath ?? null);
   const projectPathTitle = $derived(projectPath);
 
   function onDragStart(e: MouseEvent) {
+    if (!isTauri) return;
     if ((e.target as HTMLElement).closest("[data-tauri-no-drag]")) return;
     void getCurrentWindow().startDragging();
   }
