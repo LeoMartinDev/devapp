@@ -240,7 +240,6 @@
   <main class="h-full min-h-0 overflow-hidden bg-canvas text-text" style="padding-top: 38px">
     <ConfigEditor
       open={configOpen}
-      mode="page"
       {project}
       onClose={() => {
         configOpen = false;
@@ -300,4 +299,3 @@
   }}
   launchLocked={runtimeStore.launchLocked}
 />
-

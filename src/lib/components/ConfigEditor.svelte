@@ -18,12 +18,9 @@
   import ReadyCheckEditor from "$lib/components/ReadyCheckEditor.svelte";
   import Button from "$lib/components/ui/Button.svelte";
   import ConfirmDialog from "$lib/components/ui/ConfirmDialog.svelte";
-  import Dialog from "$lib/components/ui/Dialog.svelte";
   import { runtimeStore } from "$lib/stores/runtime.svelte";
   import type { ProjectRecord } from "$lib/types";
   import { untrack } from "svelte";
-
-  type Mode = "panel" | "page";
 
   const sectionNavItems = [
     { id: "settings-general", label: "General" },
@@ -38,10 +35,9 @@
     open: boolean;
     project: ProjectRecord | null;
     onClose: () => void;
-    mode?: Mode;
   };
 
-  let { open, project, onClose, mode = "panel" }: Props = $props();
+  let { open, project, onClose }: Props = $props();
 
   let version = $state(1);
   let globalEnvRows = $state<EnvRow[]>([]);
@@ -83,13 +79,6 @@
 
   const previewYaml = $derived(serializeConfig(buildConfigFromForm(formState)));
   const formIssueCount = $derived(validationIssues.length);
-  const dialogDescription = $derived(
-    project
-      ? `Base directory: ${project.baseDir}. Config: ${project.configSource} - ${project.configPath}.`
-      : "Select a project first.",
-  );
-  const panelLayoutClass =
-    "grid h-[min(760px,calc(100vh-160px))] min-h-0 grid-cols-1 overflow-hidden";
   const projectSourceLabel = $derived(
     !project
       ? "Auto-detect"
@@ -418,7 +407,7 @@
   }
 
   $effect(() => {
-    if (!open || mode !== "page") {
+    if (!open) {
       return;
     }
     activeSection = "settings-general";
@@ -471,88 +460,6 @@
   });
 </script>
 
-{#snippet panelBody()}
-  <div class={panelLayoutClass}>
-    <div class="flex min-h-0 flex-col w-full">
-      <div class="min-h-0 flex-1 overflow-y-auto px-4 py-4">
-        {#if loading}
-          <div class="text-sm text-text-subtle">Loading settings...</div>
-        {:else if loadError}
-          <div class="grid gap-3 rounded-md border border-danger/40 bg-danger/10 p-4 text-sm">
-            <div class="font-medium text-danger">Configuration could not be loaded</div>
-            <div class="text-danger/80">{loadError}</div>
-            <div class="text-text-subtle">
-              The settings form is disabled so an empty generated configuration cannot overwrite the project YAML.
-            </div>
-          </div>
-        {:else}
-          <div class="grid gap-4">
-            <EnvEditor
-              bind:rows={globalEnvRows}
-              {issueFor}
-              onAdd={addGlobalEnvRow}
-              onRemove={removeGlobalEnvRow}
-              onFieldBlur={markTouched}
-            />
-            
-            <div class="flex items-center justify-between border-t border-border pt-4">
-              <h3 class="text-sm font-semibold text-text">Processes</h3>
-              <Button size="sm" onclick={addProcess}>Add process</Button>
-            </div>
-
-            {#each processes as process, index (process.id)}
-              <div class="grid gap-4 rounded-xl border border-border/60 bg-surface-raised/70 p-4 shadow-sm">
-                <ProcessForm
-                  {process}
-                  processCount={processes.length}
-                  {processIssue}
-                  onRemove={removeProcess}
-                  onFieldBlur={markTouched}
-                />
-
-                <EnvEditor
-                  bind:rows={process.envRows}
-                  processId={process.id}
-                  {issueFor}
-                  onAdd={() => addEnvRow(process)}
-                  onRemove={(id) => removeEnvRow(process, id)}
-                  onFieldBlur={markTouched}
-                />
-
-                <div class="grid grid-cols-1 gap-3 lg:grid-cols-[220px_minmax(0,1fr)]">
-                  <div class="hidden lg:block"></div>
-                  <DependencyEditor
-                    {process}
-                    {processes}
-                    {dependencyIssue}
-                    onAdd={addDependency}
-                    onRemove={removeDependency}
-                    onFieldBlur={markTouched}
-                  />
-                </div>
-
-                <ReadyCheckEditor {process} {readyIssue} onFieldBlur={markTouched} />
-              </div>
-            {/each}
-
-            <section class="grid gap-2 border-t border-border pt-5">
-              <div class="flex items-center justify-between">
-                <h2 class="text-sm font-semibold text-text">YAML preview</h2>
-                <Button size="sm" onclick={() => (showPreview = !showPreview)}>
-                  {showPreview ? "Hide preview" : "Preview YAML"}
-                </Button>
-              </div>
-              {#if showPreview}
-                <pre data-native-selectable="yaml-preview" class="max-h-72 overflow-auto rounded-md border border-border/70 bg-surface-raised/60 p-3 font-mono text-xs leading-5 text-text-muted">{previewYaml}</pre>
-              {/if}
-            </section>
-          </div>
-        {/if}
-      </div>
-    </div>
-  </div>
-{/snippet}
-
 {#snippet pageBody()}
   <div class="grid h-full min-h-0 grid-cols-1 overflow-hidden lg:grid-cols-[248px_minmax(0,1fr)]">
     <aside class="min-h-0 border-b border-border bg-surface/90 lg:border-b-0 lg:border-r">
@@ -590,7 +497,7 @@
     </aside>
 
     <div bind:this={pageScrollContainer} class="min-h-0 overflow-y-auto bg-canvas" onscroll={syncActiveSectionFromScroll}>
-      <div class="mx-auto flex w-full max-w-[52rem] flex-col gap-5 px-20 py-8 lg:px-32 lg:py-10">
+      <div class="mx-auto flex w-full max-w-[52rem] flex-col gap-8 px-20 py-8 lg:px-32 lg:py-10">
         {#if loading}
           <div class="text-sm text-text-subtle">Loading settings...</div>
         {:else if loadError}
@@ -623,22 +530,24 @@
             </div>
           </section>
 
-          <section bind:this={environmentSection} id="settings-environment" class="grid gap-4 border-t border-border/70 pt-6">
+          <section bind:this={environmentSection} id="settings-environment" class="grid gap-4 border-t border-border/70 pt-8">
             <div>
               <h2 class="text-base font-semibold text-text">Environment</h2>
               <p class="mt-1 text-sm leading-6 text-text-subtle">Shared variables are injected into every configured process.</p>
             </div>
 
-            <EnvEditor
-              bind:rows={globalEnvRows}
-              {issueFor}
-              onAdd={addGlobalEnvRow}
-              onRemove={removeGlobalEnvRow}
-              onFieldBlur={markTouched}
-            />
+            <div class="rounded-xl border border-border/60 bg-surface-raised/70 p-4 shadow-sm">
+              <EnvEditor
+                bind:rows={globalEnvRows}
+                {issueFor}
+                onAdd={addGlobalEnvRow}
+                onRemove={removeGlobalEnvRow}
+                onFieldBlur={markTouched}
+              />
+            </div>
           </section>
 
-          <section bind:this={processesSection} id="settings-processes" class="grid gap-5 border-t border-border/70 pt-6">
+          <section bind:this={processesSection} id="settings-processes" class="grid gap-5 border-t border-border/70 pt-8">
             <div class="flex items-start justify-between gap-3">
               <div>
                 <h2 class="text-base font-semibold text-text">Processes</h2>
@@ -648,8 +557,8 @@
             </div>
 
             {#if processes.length > 0}
-              {#each processes as process, index (process.id)}
-                <div class="grid gap-0 rounded-xl border border-border/60 bg-surface-raised/70 p-4 shadow-sm">
+              {#each processes as process (process.id)}
+                <div class="grid gap-5 rounded-xl border border-border/60 bg-surface-raised/70 p-4 shadow-sm">
                   <ProcessForm
                     {process}
                     processCount={processes.length}
@@ -658,25 +567,31 @@
                     onFieldBlur={markTouched}
                   />
 
-                  <EnvEditor
-                    bind:rows={process.envRows}
-                    processId={process.id}
-                    {issueFor}
-                    onAdd={() => addEnvRow(process)}
-                    onRemove={(id) => removeEnvRow(process, id)}
-                    onFieldBlur={markTouched}
-                  />
+                  <div class="border-t border-border/70 pt-5">
+                    <EnvEditor
+                      bind:rows={process.envRows}
+                      processId={process.id}
+                      {issueFor}
+                      onAdd={() => addEnvRow(process)}
+                      onRemove={(id) => removeEnvRow(process, id)}
+                      onFieldBlur={markTouched}
+                    />
+                  </div>
 
-                  <DependencyEditor
-                    {process}
-                    {processes}
-                    {dependencyIssue}
-                    onAdd={addDependency}
-                    onRemove={removeDependency}
-                    onFieldBlur={markTouched}
-                  />
+                  <div class="border-t border-border/70 pt-5">
+                    <DependencyEditor
+                      {process}
+                      {processes}
+                      {dependencyIssue}
+                      onAdd={addDependency}
+                      onRemove={removeDependency}
+                      onFieldBlur={markTouched}
+                    />
+                  </div>
 
-                  <ReadyCheckEditor {process} {readyIssue} onFieldBlur={markTouched} />
+                  <div class="border-t border-border/70 pt-5">
+                    <ReadyCheckEditor {process} {readyIssue} onFieldBlur={markTouched} />
+                  </div>
                 </div>
               {/each}
             {:else}
@@ -686,19 +601,22 @@
             {/if}
           </section>
 
-          <section bind:this={previewSection} id="settings-preview" class="grid gap-4 border-t border-border/70 pt-6">
-            <div class="flex items-center justify-between gap-3">
-              <div>
-                <h2 class="text-base font-semibold text-text">YAML preview</h2>
-                <p class="mt-1 text-sm leading-6 text-text-subtle">Preview the generated devapp.yml before saving it back to the project.</p>
-              </div>
-              <Button size="sm" onclick={() => (showPreview = !showPreview)}>
-                {showPreview ? "Hide preview" : "Preview YAML"}
-              </Button>
+          <section bind:this={previewSection} id="settings-preview" class="grid gap-4 border-t border-border/70 pt-8">
+            <div>
+              <h2 class="text-base font-semibold text-text">YAML preview</h2>
+              <p class="mt-1 text-sm leading-6 text-text-subtle">Preview the generated devapp.yml before saving it back to the project.</p>
             </div>
-            {#if showPreview}
-              <pre data-native-selectable="yaml-preview" class="max-h-72 overflow-auto rounded-md border border-border/70 bg-surface-raised/60 p-3 font-mono text-xs leading-5 text-text-muted">{previewYaml}</pre>
-            {/if}
+            <div class="grid gap-3 rounded-xl border border-border/60 bg-surface-raised/70 p-4 shadow-sm">
+              <div class="flex items-center justify-between gap-3">
+                <div class="text-sm font-medium text-text">Generated output</div>
+                <Button size="sm" onclick={() => (showPreview = !showPreview)}>
+                  {showPreview ? "Hide preview" : "Preview YAML"}
+                </Button>
+              </div>
+              {#if showPreview}
+                <pre data-native-selectable="yaml-preview" class="max-h-72 overflow-auto rounded-md border border-border/70 bg-surface-raised/60 p-3 font-mono text-xs leading-5 text-text-muted">{previewYaml}</pre>
+              {/if}
+            </div>
           </section>
         {/if}
       </div>
@@ -728,7 +646,7 @@
   </div>
 {/snippet}
 
-{#if open && mode === "page"}
+{#if open}
   <section class="flex h-full min-h-0 flex-col bg-canvas text-text">
     <div class="min-h-0 flex-1 overflow-hidden">
       {@render pageBody()}
@@ -738,22 +656,6 @@
       {@render editorFooter()}
     </footer>
   </section>
-{:else}
-  <Dialog
-    {open}
-    title="Runtime configuration"
-    description={dialogDescription}
-    size="xl"
-    variant="panel"
-    onClose={requestClose}
-    closeOnOverlay={!saving}
-  >
-    {@render panelBody()}
-
-    {#snippet footer()}
-      {@render editorFooter()}
-    {/snippet}
-  </Dialog>
 {/if}
 
 <ConfirmDialog

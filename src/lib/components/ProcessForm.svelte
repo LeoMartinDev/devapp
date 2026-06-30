@@ -15,7 +15,7 @@
   let { process, processCount, processIssue, onRemove, onFieldBlur }: Props = $props();
 </script>
 
-<section class="grid gap-4 border-t border-border/70 pt-5">
+<section class="grid gap-4">
   <div class="flex items-start justify-between gap-3">
     <div>
       <h3 class="text-sm font-semibold text-text">Process: {process.name || "Unnamed"}</h3>

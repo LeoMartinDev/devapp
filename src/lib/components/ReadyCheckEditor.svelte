@@ -137,7 +137,7 @@
   }
 </script>
 
-<section data-settings-surface="flat" class="grid gap-3 border-t border-border/70 pt-5">
+<section data-settings-surface="flat" class="grid gap-3">
   <div>
     <h3 class="text-sm font-semibold text-text">Readiness</h3>
     <p class="mt-1 text-xs leading-5 text-text-subtle">Optional startup probe for services that need an explicit ready signal.</p>
