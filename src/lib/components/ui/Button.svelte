@@ -33,8 +33,8 @@
   };
 
   const sizeClass: Record<Size, string> = {
-    sm: "h-7 px-2 text-[12px]",
-    md: "h-8 px-3 text-[13px]",
+    sm: "h-7 px-2 text-[10px]",
+    md: "h-8 px-3 text-[12px]",
   };
 </script>
 

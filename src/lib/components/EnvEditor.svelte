@@ -33,11 +33,11 @@
     {#if rows.length === 0}
       <div class="flex items-center justify-between gap-3 px-1 text-sm text-text-subtle">
         <span>{processId ? "No process variables." : "No global variables."}</span>
-        <Button size="sm" onclick={onAdd}>Add variable</Button>
+        <Button size="sm" variant="ghost" onclick={onAdd}>New +</Button>
       </div>
     {:else}
       <div class="flex justify-end mb-1">
-        <Button size="sm" onclick={onAdd}>Add variable</Button>
+        <Button size="sm" variant="ghost" onclick={onAdd}>New +</Button>
       </div>
       {#each rows as row, index (row.id)}
         {@const envIssueKey = processId ? `process.${processId}.env.${row.id}.key` : `env.${row.id}.key`}

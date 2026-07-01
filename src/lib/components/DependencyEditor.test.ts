@@ -104,7 +104,7 @@ describe("DependencyEditor", () => {
       },
     });
 
-    await fireEvent.click(getByRole("button", { name: "Add dependency" }));
+    await fireEvent.click(getByRole("button", { name: "New +" }));
     await fireEvent.click(getByRole("button", { name: "Remove dependency 1" }));
     await fireEvent.blur(getByRole("combobox", { name: "Dependency process 1" }));
 
@@ -112,5 +112,26 @@ describe("DependencyEditor", () => {
     expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ id: "process-1" }));
     expect(onRemove).toHaveBeenCalledWith(expect.objectContaining({ id: "process-1" }), "dependency-1");
     expect(onFieldBlur).toHaveBeenCalledWith("process.process-1.dependency.dependency-1");
+  });
+
+  it("keeps the add action width consistent", () => {
+    const { getByRole } = render(DependencyEditor, {
+      props: {
+        process: {
+          ...process,
+          dependencies: [],
+        },
+        processes: [
+          process,
+          { ...process, id: "process-2", name: "api" },
+        ],
+        dependencyIssue: () => null,
+        onAdd: vi.fn(),
+        onRemove: vi.fn(),
+      },
+    });
+
+    const addButton = getByRole("button", { name: "New +" });
+    expect(addButton).not.toHaveClass("border");
   });
 });

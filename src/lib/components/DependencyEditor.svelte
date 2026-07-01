@@ -37,11 +37,11 @@
   {#if process.dependencies.length === 0}
     <div class="flex items-center justify-between gap-3 px-1 text-sm text-text-subtle">
       <span>Starts without dependencies.</span>
-      <Button size="sm" onclick={() => onAdd(process)}>Add dependency</Button>
+      <Button size="sm" variant="ghost" onclick={() => onAdd(process)}>New +</Button>
     </div>
   {:else}
     <div class="flex justify-end mb-1">
-      <Button size="sm" onclick={() => onAdd(process)}>Add dependency</Button>
+      <Button size="sm" variant="ghost" onclick={() => onAdd(process)}>New +</Button>
     </div>
     <div class="grid gap-2.5">
       {#each process.dependencies as dependency, index (dependency.id)}

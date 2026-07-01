@@ -7,7 +7,7 @@ import SegmentedControl from "./SegmentedControl.svelte";
 import TextField from "./TextField.svelte";
 
 describe("UI density defaults", () => {
-  it("renders default Button with compact text and height", () => {
+  it("renders default Button with reduced text size and compact height", () => {
     const { getByRole } = render(Button, {
       props: {
         label: "Save",
@@ -16,7 +16,7 @@ describe("UI density defaults", () => {
 
     const button = getByRole("button");
     expect(button.className).toContain("h-8");
-    expect(button.className).toContain("text-[13px]");
+    expect(button.className).toContain("text-[12px]");
   });
 
   it("renders compact TextField with 13px input text and 12px label", () => {

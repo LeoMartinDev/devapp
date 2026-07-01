@@ -80,12 +80,26 @@ describe("EnvEditor", () => {
       },
     });
 
-    await fireEvent.click(getByRole("button", { name: "Add variable" }));
+    await fireEvent.click(getByRole("button", { name: "New +" }));
     await fireEvent.click(getByRole("button", { name: "Remove process environment variable 1" }));
     await fireEvent.blur(getByRole("textbox", { name: "Process environment variable key 1" }));
 
     expect(onAdd).toHaveBeenCalledTimes(1);
     expect(onRemove).toHaveBeenCalledWith("env-1");
     expect(onFieldBlur).toHaveBeenCalledWith("process.process-1.env.env-1.key");
+  });
+
+  it("keeps the add action width consistent", () => {
+    const { getByRole } = render(EnvEditor, {
+      props: {
+        rows: [{ id: "env-1", key: "EXAMPLE_ENV", value: "hello-from-devapp" }],
+        issueFor: () => null,
+        onAdd: vi.fn(),
+        onRemove: vi.fn(),
+      },
+    });
+
+    const addButton = getByRole("button", { name: "New +" });
+    expect(addButton).not.toHaveClass("border");
   });
 });

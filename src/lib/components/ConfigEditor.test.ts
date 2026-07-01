@@ -156,33 +156,62 @@ describe("ConfigEditor", () => {
     expect(queryByRole("button", { name: "Save settings" })).toBeNull();
   });
 
-  it("renders one process card per loaded process", async () => {
-    const { findByRole, getAllByRole, getByRole } = renderLoadedEditor();
+  it("renders processes as a compact list with summary rows", async () => {
+    const { findByRole, getByRole, queryByRole } = renderLoadedEditor();
 
     expect(await findByRole("heading", { name: "Processes" })).toBeInTheDocument();
-    expect(getByRole("heading", { name: "Process: api" })).toBeInTheDocument();
-    expect(getByRole("heading", { name: "Process: worker" })).toBeInTheDocument();
+    const apiRow = getByRole("button", { name: "Open process api (service)" });
+    const workerRow = getByRole("button", { name: "Open process worker (task)" });
 
-    const processNameInputs = getAllByRole("textbox", { name: "Name" }) as HTMLInputElement[];
-    expect(processNameInputs.map((input) => input.value)).toEqual(expect.arrayContaining(["api", "worker"]));
+    expect(apiRow).toBeInTheDocument();
+    expect(workerRow).toBeInTheDocument();
+    expect(apiRow).toHaveTextContent("api");
+    expect(apiRow).toHaveTextContent("service");
+    expect(apiRow.querySelector("[data-process-chevron]")).not.toBeNull();
+    expect(workerRow.querySelector("[data-process-chevron]")).not.toBeNull();
+    expect(queryByRole("heading", { name: "Process: api" })).toBeNull();
   });
 
-  it("shows process cards with nested dependency and readiness sections", async () => {
-    const { findByRole, getAllByRole } = renderLoadedEditor();
+  it("opens a dedicated process detail view and allows navigating back to list", async () => {
+    const { findByRole, getByRole, queryByRole, getByTestId } = renderLoadedEditor();
 
     await findByRole("heading", { name: "Processes" });
-    expect(getAllByRole("heading", { name: "Dependencies" })).toHaveLength(2);
-    expect(getAllByRole("heading", { name: "Readiness" })).toHaveLength(2);
+    await fireEvent.click(getByRole("button", { name: "Open process api (service)" }));
+
+    expect(getByRole("heading", { name: "Process: api" })).toBeInTheDocument();
+    expect(getByRole("heading", { name: "Dependencies" })).toBeInTheDocument();
+    expect(getByRole("button", { name: "Back to processes" })).toBeInTheDocument();
+    expect(queryByRole("navigation", { name: "Settings sections" })).toBeNull();
+    expect(queryByRole("heading", { name: "General" })).toBeNull();
+    expect(queryByRole("heading", { name: "Environment" })).toBeNull();
+    expect(queryByRole("heading", { name: "YAML preview" })).toBeNull();
+    expect(queryByRole("button", { name: "Cancel" })).toBeNull();
+    expect(queryByRole("button", { name: "Save" })).toBeNull();
+    expect(getByTestId("process-detail-scroll")).toHaveClass("overflow-y-auto");
+    expect(getByTestId("process-detail-scroll")).toHaveClass("h-full");
+
+    await fireEvent.click(getByRole("button", { name: "Back to processes" }));
+
+    expect(getByRole("button", { name: "Open process api (service)" })).toBeInTheDocument();
+    expect(queryByRole("heading", { name: "Process: api" })).toBeNull();
+    expect(getByRole("navigation", { name: "Settings sections" })).toBeInTheDocument();
   });
 
-  it("shows dirty footer status for a loaded project while keeping the save label stable", async () => {
-    const { findByRole, getAllByRole, getByRole, getByText } = renderLoadedEditor();
+  it("shows dirty footer status after returning from process detail editing", async () => {
+    const { findByRole, getAllByRole, getByRole, getByText, queryByRole } = renderLoadedEditor();
 
+    await findByRole("heading", { name: "Processes" });
+    await fireEvent.click(getByRole("button", { name: "Open process api (service)" }));
     await findByRole("heading", { name: "Process: api" });
 
     await fireEvent.input(getAllByRole("textbox", { name: "Name" })[0], {
       target: { value: "api-renamed" },
     });
+
+    expect(queryByRole("button", { name: "Save" })).toBeNull();
+    expect(queryByRole("button", { name: "Cancel" })).toBeNull();
+
+    await fireEvent.click(getByRole("button", { name: "Back to processes" }));
 
     await waitFor(() => {
       expect(getByText("Unsaved changes in project YAML")).toBeInTheDocument();

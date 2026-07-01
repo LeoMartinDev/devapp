@@ -57,6 +57,7 @@
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
   let dirtyClosePending = $state(false);
   let activeSection = $state<SectionId>("settings-general");
+  let processesViewMode = $state<"list" | "detail">("list");
   let pageScrollContainer = $state<HTMLElement | null>(null);
   let generalSection = $state<HTMLElement | null>(null);
   let environmentSection = $state<HTMLElement | null>(null);
@@ -100,6 +101,7 @@
     globalEnvRows = [];
     processes = [newProcess("api")];
     selectedProcessId = processes[0].id;
+    processesViewMode = "list";
   }
 
   function resetUnloaded() {
@@ -107,6 +109,7 @@
     globalEnvRows = [];
     processes = [];
     selectedProcessId = null;
+    processesViewMode = "list";
   }
 
   function errorMessage(error: unknown) {
@@ -151,6 +154,7 @@
         processes = [newProcess("api")];
       }
       selectedProcessId = processes[0].id;
+      processesViewMode = "list";
       suppressDirty = false;
       isDirty = false;
       loadedProjectId = projectId;
@@ -184,6 +188,7 @@
     const process = newProcess(name);
     processes = [...processes, process];
     selectedProcessId = process.id;
+    processesViewMode = "detail";
   }
 
   function removeProcess(id: string) {
@@ -197,6 +202,9 @@
       }
     }
     selectedProcessId = processes[0]?.id ?? null;
+    if (processes.length === 0) {
+      processesViewMode = "list";
+    }
   }
 
   function uniqueProcessName(base: string) {
@@ -461,6 +469,62 @@
 </script>
 
 {#snippet pageBody()}
+  {#if processesViewMode === "detail" && selectedProcess}
+    <div data-testid="process-detail-scroll" class="h-full min-h-0 overflow-y-auto bg-canvas">
+      <div class="mx-auto flex w-full max-w-[52rem] flex-col gap-5 px-20 py-8 lg:px-32 lg:py-10">
+        <Button
+          size="sm"
+          variant="ghost"
+          class="w-fit"
+          onclick={() => {
+            processesViewMode = "list";
+          }}
+          aria-label="Back to processes"
+        >
+          <svg viewBox="0 0 16 16" class="h-3.5 w-3.5" aria-hidden="true">
+            <path d="M9.5 3.5L5 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <span>Back</span>
+        </Button>
+
+        <div class="grid gap-5 rounded-xl border border-border/60 bg-surface-raised/70 p-4 shadow-sm">
+          <ProcessForm
+            process={selectedProcess}
+            processCount={processes.length}
+            {processIssue}
+            onRemove={removeProcess}
+            onFieldBlur={markTouched}
+          />
+
+          <div class="border-t border-border/70 pt-5">
+            <EnvEditor
+              bind:rows={selectedProcess.envRows}
+              processId={selectedProcess.id}
+              {issueFor}
+              onAdd={() => addEnvRow(selectedProcess)}
+              onRemove={(id) => removeEnvRow(selectedProcess, id)}
+              onFieldBlur={markTouched}
+            />
+          </div>
+
+          <div class="border-t border-border/70 pt-5">
+            <DependencyEditor
+              process={selectedProcess}
+              {processes}
+              {dependencyIssue}
+              onAdd={addDependency}
+              onRemove={removeDependency}
+              onFieldBlur={markTouched}
+            />
+          </div>
+
+          <div class="border-t border-border/70 pt-5">
+            <ReadyCheckEditor process={selectedProcess} {readyIssue} onFieldBlur={markTouched} />
+          </div>
+        </div>
+      </div>
+    </div>
+  {:else}
   <div class="grid h-full min-h-0 grid-cols-1 overflow-hidden lg:grid-cols-[248px_minmax(0,1fr)]">
     <aside class="min-h-0 border-b border-border bg-surface/90 lg:border-b-0 lg:border-r">
       <div class="flex h-full min-h-0 flex-col">
@@ -556,49 +620,43 @@
               <Button size="sm" onclick={addProcess} disabled={loading || loadError !== null}>Add process</Button>
             </div>
 
-            {#if processes.length > 0}
-              {#each processes as process (process.id)}
-                <div class="grid gap-5 rounded-xl border border-border/60 bg-surface-raised/70 p-4 shadow-sm">
-                  <ProcessForm
-                    {process}
-                    processCount={processes.length}
-                    {processIssue}
-                    onRemove={removeProcess}
-                    onFieldBlur={markTouched}
-                  />
-
-                  <div class="border-t border-border/70 pt-5">
-                    <EnvEditor
-                      bind:rows={process.envRows}
-                      processId={process.id}
-                      {issueFor}
-                      onAdd={() => addEnvRow(process)}
-                      onRemove={(id) => removeEnvRow(process, id)}
-                      onFieldBlur={markTouched}
-                    />
-                  </div>
-
-                  <div class="border-t border-border/70 pt-5">
-                    <DependencyEditor
-                      {process}
-                      {processes}
-                      {dependencyIssue}
-                      onAdd={addDependency}
-                      onRemove={removeDependency}
-                      onFieldBlur={markTouched}
-                    />
-                  </div>
-
-                  <div class="border-t border-border/70 pt-5">
-                    <ReadyCheckEditor {process} {readyIssue} onFieldBlur={markTouched} />
-                  </div>
+            <div class="rounded-xl border border-border/60 bg-surface-raised/70 shadow-sm">
+              {#if processes.length === 0}
+                <div class="px-4 py-5 text-sm text-text-subtle">
+                  Add a process to start building the runtime graph.
                 </div>
-              {/each}
-            {:else}
-              <div class="px-1 text-sm text-text-subtle">
-                Add a process to start building the runtime graph.
-              </div>
-            {/if}
+              {:else}
+                <ul aria-label="Configured processes" class="divide-y divide-border/70">
+                  {#each processes as process (process.id)}
+                    {@const processLabel = process.name || "Unnamed process"}
+                    <li>
+                      <button
+                        type="button"
+                        class="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors duration-75 hover:bg-surface-hover/70"
+                        aria-label={`Open process ${processLabel} (${process.kind})`}
+                        onclick={() => {
+                          selectedProcessId = process.id;
+                          processesViewMode = "detail";
+                        }}
+                      >
+                        <span class="min-w-0">
+                          <span class="block truncate text-sm font-medium text-text">{processLabel}</span>
+                          <span class="mt-0.5 block truncate text-[11px] text-text-subtle">{process.kind}</span>
+                        </span>
+                        <svg
+                          data-process-chevron
+                          viewBox="0 0 16 16"
+                          class="h-3.5 w-3.5 shrink-0 text-text-subtle"
+                          aria-hidden="true"
+                        >
+                          <path d="M6 3.5L10.5 8 6 12.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                      </button>
+                    </li>
+                  {/each}
+                </ul>
+              {/if}
+            </div>
           </section>
 
           <section bind:this={previewSection} id="settings-preview" class="grid gap-4 border-t border-border/70 pt-8">
@@ -622,6 +680,7 @@
       </div>
     </div>
   </div>
+  {/if}
 {/snippet}
 
 {#snippet editorFooter()}
@@ -652,9 +711,11 @@
       {@render pageBody()}
     </div>
 
-    <footer class="border-t border-border bg-surface px-5 py-4">
-      {@render editorFooter()}
-    </footer>
+    {#if processesViewMode !== "detail"}
+      <footer class="border-t border-border bg-surface px-5 py-4">
+        {@render editorFooter()}
+      </footer>
+    {/if}
   </section>
 {/if}
 
